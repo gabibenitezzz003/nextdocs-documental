@@ -1,0 +1,25 @@
+{
+  "name": "@docvance/dominio",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "./dist/indice.js",
+  "types": "./dist/indice.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/indice.d.ts",
+      "default": "./dist/indice.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest run",
+    "test:mirar": "vitest",
+    "lint": "eslint src"
+  },
+  "devDependencies": {
+    "typescript": "^5.6.3",
+    "vitest": "^2.1.2"
+  }
+}
