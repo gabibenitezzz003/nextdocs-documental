@@ -3,11 +3,16 @@ import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import { AlmacenamientoEnMemoria, MotorSimulado, limpiarGuiones, registrarGuion } from '@docvance/adaptadores';
 import { cerrar, conexion, enTransaccion } from '@docvance/db';
 import { exigirBaseDePruebas, migrar, usarBaseDePruebas } from '@docvance/db';
-import { FACTURA, REMITO, type ObjetoNegocio, type ValorExtraido } from '@docvance/dominio';
+import { DNI, FACTURA, REMITO, VTV, emparejar, type ObjetoNegocio, type ValorExtraido } from '@docvance/dominio';
 import { createHash, randomUUID } from 'node:crypto';
 
 import { FallaTransitoria, procesarDocumento } from './procesamiento.js';
 import { hallazgosDeConstatacion, verificarContraArca } from './fiscal.js';
+import {
+  buscarObjetosEnFollow,
+  choferComoObjeto,
+  vehiculoComoObjeto,
+} from './catalogoFollow.js';
 import {
   EMISOR_GENERICO,
   aplicarCorrecciones,
@@ -632,5 +637,95 @@ describe('aprender de las correcciones humanas', () => {
     expect(pistas).toHaveLength(1);
     expect(pistas[0]).toContain('razonSocialEmisor');
     expect(pistas[0]).toContain('BODEGA SAN MARTIN SA');
+  });
+});
+
+describe('traer objetos desde follow', () => {
+  it('traduce un chofer de follow a los nombres que usa la plantilla', () => {
+    const objeto = choferComoObjeto({
+      id: 'chf-1',
+      nombre: 'Juan Gabriel',
+      apellido: 'Benitez',
+      documento: '36963003',
+      legajo: 'L-44',
+      estado: 'ACTIVO',
+    });
+
+    expect(objeto.tipo).toBe('CHOFER');
+    expect(objeto['numeroDocumento']).toBe('36963003');
+    expect(objeto.etiqueta).toBe('Benitez, Juan Gabriel');
+    expect(objeto['origen']).toBe('follow');
+  });
+
+  it('follow llama dominio a lo que la plantilla llama patente', () => {
+    const objeto = vehiculoComoObjeto({
+      id: 'veh-1',
+      dominio: 'ab 123 cd',
+      modelo: 'Actros',
+      marca: { nombre: 'Mercedes' },
+    });
+
+    expect(objeto.tipo).toBe('VEHICULO');
+    expect(objeto['patente']).toBe('AB123CD');
+    expect(objeto.etiqueta).toContain('Mercedes Actros');
+  });
+
+  it('un chofer de follow empareja con un dni por numero de documento', () => {
+    const chofer = choferComoObjeto({ id: 'chf-1', apellido: 'Benitez', documento: '36963003' });
+
+    const salida = emparejar(
+      DNI,
+      {
+        numeroDocumento: {
+          valorLeido: '36.963.003',
+          valorNormalizado: '36963003',
+          confianza: 0.99,
+          evidencia: null,
+        },
+      } as unknown as Record<string, ValorExtraido>,
+      [chofer],
+    );
+
+    expect(salida.resolucion).toBe('CONFIRMADO_AUTOMATICO');
+    expect(salida.sujeto?.id).toBe('chf-1');
+  });
+
+  it('una vtv empareja con el vehiculo por patente', () => {
+    const vehiculo = vehiculoComoObjeto({ id: 'veh-1', dominio: 'AB123CD' });
+
+    const salida = emparejar(
+      VTV,
+      {
+        patente: {
+          valorLeido: 'AB 123 CD',
+          valorNormalizado: 'AB123CD',
+          confianza: 0.97,
+          evidencia: null,
+        },
+      } as unknown as Record<string, ValorExtraido>,
+      [vehiculo],
+    );
+
+    expect(salida.resolucion).toBe('CONFIRMADO_AUTOMATICO');
+    expect(salida.sujeto?.id).toBe('veh-1');
+  });
+
+  it('sin follow configurado no busca nada y no rompe', async () => {
+    delete process.env['FOLLOW_URL'];
+    delete process.env['FOLLOW_TOKEN'];
+    expect(await buscarObjetosEnFollow({ numeroDocumento: '36963003' })).toHaveLength(0);
+  });
+
+  it('no le pregunta a follow si no hay ningun termino util', async () => {
+    process.env['FOLLOW_URL'] = 'http://localhost:8080';
+    process.env['FOLLOW_TOKEN'] = 'token-de-prueba';
+
+    try {
+      expect(await buscarObjetosEnFollow({ razonSocialEmisor: 'Bodega' })).toHaveLength(0);
+      expect(await buscarObjetosEnFollow({ numeroDocumento: '12' })).toHaveLength(0);
+    } finally {
+      delete process.env['FOLLOW_URL'];
+      delete process.env['FOLLOW_TOKEN'];
+    }
   });
 });

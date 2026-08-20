@@ -7,7 +7,7 @@ import {
   type MotorDocumental,
 } from '@docvance/adaptadores';
 import {
-  buscarObjetosDeNegocio,
+  buscarObjetosCombinado,
   procesarDocumento,
   type ResultadoProcesamiento,
 } from '@docvance/nucleo';
@@ -22,10 +22,10 @@ export interface TrabajoProcesamiento {
 let almacenamiento: Almacenamiento | null = null;
 let motor: MotorDocumental | null = null;
 
-function dependencias(): { almacenamiento: Almacenamiento; motor: MotorDocumental; buscarObjetos: typeof buscarObjetosDeNegocio } {
+function dependencias(): { almacenamiento: Almacenamiento; motor: MotorDocumental; buscarObjetos: typeof buscarObjetosCombinado } {
   if (!almacenamiento) almacenamiento = almacenamientoDeEntorno();
   if (!motor) motor = motorDeEntorno();
-  return { almacenamiento, motor, buscarObjetos: buscarObjetosDeNegocio };
+  return { almacenamiento, motor, buscarObjetos: buscarObjetosCombinado };
 }
 
 export async function procesar(trabajo: Job<TrabajoProcesamiento>): Promise<ResultadoProcesamiento> {
