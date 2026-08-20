@@ -9,3 +9,8 @@ coverage/
 .DS_Store
 almacenamiento/
 dist/
+
+secretos/
+*.key
+*.crt
+*.csr

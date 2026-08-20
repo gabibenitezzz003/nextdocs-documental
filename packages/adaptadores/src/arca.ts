@@ -1,4 +1,5 @@
 import { readFileSync } from 'node:fs';
+import { request } from 'node:https';
 import forge from 'node-forge';
 
 export const SERVICIO_CONSTATACION = 'wscdc';
@@ -15,6 +16,57 @@ export const ENTORNOS_ARCA = {
 } as const;
 
 const SPACIO_WSCDC = 'http://servicios1.afip.gob.ar/wscdc/';
+
+const CIFRADOS_ARCA = 'DEFAULT:@SECLEVEL=1';
+const ESPERA_MS = 30_000;
+
+export interface RespuestaSoap {
+  estado: number;
+  cuerpo: string;
+}
+
+export function pedirSoap(
+  url: string,
+  accion: string,
+  sobre: string,
+): Promise<RespuestaSoap> {
+  const destino = new URL(url);
+
+  return new Promise((resolver, rechazar) => {
+    const pedido = request(
+      {
+        hostname: destino.hostname,
+        port: destino.port || 443,
+        path: `${destino.pathname}${destino.search}`,
+        method: 'POST',
+        ciphers: CIFRADOS_ARCA,
+        headers: {
+          'content-type': 'text/xml; charset=utf-8',
+          soapaction: accion,
+          'content-length': Buffer.byteLength(sobre),
+        },
+      },
+      (respuesta) => {
+        const partes: Buffer[] = [];
+        respuesta.on('data', (parte: Buffer) => partes.push(parte));
+        respuesta.on('end', () => {
+          resolver({
+            estado: respuesta.statusCode ?? 0,
+            cuerpo: Buffer.concat(partes).toString('utf8'),
+          });
+        });
+      },
+    );
+
+    pedido.setTimeout(ESPERA_MS, () => {
+      pedido.destroy(new Error(`ARCA no respondio en ${ESPERA_MS} ms.`));
+    });
+
+    pedido.on('error', rechazar);
+    pedido.write(sobre);
+    pedido.end();
+  });
+}
 
 export const TIPOS_COMPROBANTE: Record<string, number> = {
   'FACTURA A': 1,
@@ -228,17 +280,17 @@ export async function obtenerTicketDeAcceso(
     '</wsaa:loginCms></soapenv:Body></soapenv:Envelope>',
   ].join('');
 
-  const respuesta = await fetch(ENTORNOS_ARCA[configuracion.entorno].wsaa, {
-    method: 'POST',
-    headers: { 'content-type': 'text/xml; charset=utf-8', soapaction: '' },
-    body: sobre,
-    signal: AbortSignal.timeout(30_000),
-  });
+  let respuesta: RespuestaSoap;
+  try {
+    respuesta = await pedirSoap(ENTORNOS_ARCA[configuracion.entorno].wsaa, '', sobre);
+  } catch (error) {
+    throw new ErrorArca('WSAA_INALCANZABLE', (error as Error).message);
+  }
 
-  const cuerpo = await respuesta.text();
+  const cuerpo = respuesta.cuerpo;
 
-  if (!respuesta.ok) {
-    const detalle = textoEntre(cuerpo, 'faultstring') ?? `${respuesta.status}`;
+  if (respuesta.estado < 200 || respuesta.estado >= 300) {
+    const detalle = textoEntre(cuerpo, 'faultstring') ?? `${respuesta.estado}`;
     throw new ErrorArca('WSAA_RECHAZO', detalle);
   }
 
@@ -361,29 +413,23 @@ export async function constatarComprobante(
   const ticket = await obtenerTicketDeAcceso(configuracion);
   const sobre = armarSobreConstatacion(ticket, configuracion.cuit, comprobante);
 
-  let respuesta: Response;
+  let respuesta: RespuestaSoap;
   try {
-    respuesta = await fetch(ENTORNOS_ARCA[configuracion.entorno].wscdc, {
-      method: 'POST',
-      headers: {
-        'content-type': 'text/xml; charset=utf-8',
-        soapaction: `${SPACIO_WSCDC}ComprobanteConstatar`,
-      },
-      body: sobre,
-      signal: AbortSignal.timeout(30_000),
-    });
+    respuesta = await pedirSoap(
+      ENTORNOS_ARCA[configuracion.entorno].wscdc,
+      `${SPACIO_WSCDC}ComprobanteConstatar`,
+      sobre,
+    );
   } catch (error) {
     throw new ErrorArca('ARCA_INALCANZABLE', (error as Error).message);
   }
 
-  const cuerpo = await respuesta.text();
-
-  if (!respuesta.ok) {
-    const detalle = textoEntre(cuerpo, 'faultstring') ?? `${respuesta.status}`;
+  if (respuesta.estado < 200 || respuesta.estado >= 300) {
+    const detalle = textoEntre(respuesta.cuerpo, 'faultstring') ?? `${respuesta.estado}`;
     throw new ErrorArca('ARCA_CON_ERROR', detalle);
   }
 
-  return leerRespuestaConstatacion(cuerpo);
+  return leerRespuestaConstatacion(respuesta.cuerpo);
 }
 
 export interface EstadoServicioArca {
@@ -402,17 +448,11 @@ export async function estadoDeArca(
     '</soap:Envelope>',
   ].join('');
 
-  const respuesta = await fetch(ENTORNOS_ARCA[entorno].wscdc, {
-    method: 'POST',
-    headers: {
-      'content-type': 'text/xml; charset=utf-8',
-      soapaction: `${SPACIO_WSCDC}ComprobanteDummy`,
-    },
-    body: sobre,
-    signal: AbortSignal.timeout(20_000),
-  });
-
-  const cuerpo = await respuesta.text();
+  const { cuerpo } = await pedirSoap(
+    ENTORNOS_ARCA[entorno].wscdc,
+    `${SPACIO_WSCDC}ComprobanteDummy`,
+    sobre,
+  );
 
   return {
     aplicacion: textoEntre(cuerpo, 'AppServer') ?? 'DESCONOCIDO',
