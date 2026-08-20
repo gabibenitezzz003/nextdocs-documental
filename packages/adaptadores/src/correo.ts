@@ -10,18 +10,28 @@ export interface ConfiguracionCorreo {
 }
 
 export function configuracionCorreo(): ConfiguracionCorreo | null {
-  const anfitrion = process.env['CORREO_ANFITRION'];
+  const esProduccion = process.env['NODE_ENV'] === 'production';
+  const anfitrionConfigurado = process.env['CORREO_ANFITRION']?.trim() ?? '';
+
+  // En desarrollo DocVance usa Mailpit como SMTP local. Esto evita que un
+  // CORREO_ANFITRION vacio (tal como quedaba al copiar el .env.ejemplo viejo)
+  // desactive silenciosamente todo el despachador de correo.
+  const anfitrion = anfitrionConfigurado || (esProduccion ? '' : 'localhost');
   if (!anfitrion) return null;
 
-  const puerto = Number(process.env['CORREO_PUERTO'] ?? 587);
+  const puertoConfigurado = process.env['CORREO_PUERTO']?.trim() ?? '';
+  const puerto = Number(puertoConfigurado || (esProduccion ? 587 : 1025));
+  if (!Number.isInteger(puerto) || puerto < 1 || puerto > 65_535) {
+    throw new ErrorCorreo('CORREO_CONFIGURACION_INVALIDA', `Puerto SMTP invalido: ${puertoConfigurado || puerto}.`);
+  }
 
   return {
     anfitrion,
     puerto,
     seguro: process.env['CORREO_SEGURO'] === 'true' || puerto === 465,
-    usuario: process.env['CORREO_USUARIO'] ?? null,
-    clave: process.env['CORREO_CLAVE'] ?? null,
-    remitente: process.env['CORREO_REMITENTE'] ?? 'DocVance <no-reply@docvance.local>',
+    usuario: process.env['CORREO_USUARIO']?.trim() || null,
+    clave: process.env['CORREO_CLAVE'] || null,
+    remitente: process.env['CORREO_REMITENTE']?.trim() || 'DocVance <no-reply@docvance.local>',
   };
 }
 
