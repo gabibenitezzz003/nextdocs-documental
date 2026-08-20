@@ -8,6 +8,8 @@ import { createHash, randomUUID } from 'node:crypto';
 
 import { FallaTransitoria, procesarDocumento } from './procesamiento.js';
 import { hallazgosDeConstatacion, verificarContraArca } from './fiscal.js';
+import { leCorresponde } from './distribucion.js';
+import { asuntoDeCorreo, htmlDeCorreo, textoDeCorreo } from './plantillaCorreo.js';
 import {
   buscarObjetosEnFollow,
   choferComoObjeto,
@@ -727,5 +729,91 @@ describe('traer objetos desde follow', () => {
       delete process.env['FOLLOW_URL'];
       delete process.env['FOLLOW_TOKEN'];
     }
+  });
+});
+
+describe('a quien le toca cada documento', () => {
+  const base = { id: 'd1', nombre: 'Deposito', correo: 'd@e.test' };
+
+  it('sin filtros recibe todo lo que este en sus situaciones', () => {
+    const destinatario = { ...base, familias: [], plantillas: [], situaciones: ['APROBADO'] };
+    expect(leCorresponde(destinatario, { familia: 'LOGISTICO', plantilla: 'REMITO', situacion: 'APROBADO' })).toBe(true);
+    expect(leCorresponde(destinatario, { familia: 'FISCAL', plantilla: 'FACTURA', situacion: 'APROBADO' })).toBe(true);
+  });
+
+  it('la situacion manda por encima de todo', () => {
+    const destinatario = { ...base, familias: [], plantillas: [], situaciones: ['APROBADO'] };
+    expect(leCorresponde(destinatario, { familia: 'LOGISTICO', plantilla: 'REMITO', situacion: 'OBSERVADO' })).toBe(false);
+  });
+
+  it('filtra por familia', () => {
+    const destinatario = { ...base, familias: ['LOGISTICO'], plantillas: [], situaciones: ['APROBADO'] };
+    expect(leCorresponde(destinatario, { familia: 'LOGISTICO', plantilla: 'REMITO', situacion: 'APROBADO' })).toBe(true);
+    expect(leCorresponde(destinatario, { familia: 'FISCAL', plantilla: 'FACTURA', situacion: 'APROBADO' })).toBe(false);
+  });
+
+  it('filtra por plantilla puntual', () => {
+    const destinatario = { ...base, familias: [], plantillas: ['VTV'], situaciones: ['VENCIDO'] };
+    expect(leCorresponde(destinatario, { familia: 'VEHICULAR', plantilla: 'VTV', situacion: 'VENCIDO' })).toBe(true);
+    expect(leCorresponde(destinatario, { familia: 'VEHICULAR', plantilla: 'SEGURO_VEHICULAR', situacion: 'VENCIDO' })).toBe(false);
+  });
+
+  it('con familia y plantilla juntas alcanza con cumplir una', () => {
+    const destinatario = { ...base, familias: ['LOGISTICO'], plantillas: ['FACTURA'], situaciones: ['APROBADO'] };
+    expect(leCorresponde(destinatario, { familia: 'LOGISTICO', plantilla: 'REMITO', situacion: 'APROBADO' })).toBe(true);
+    expect(leCorresponde(destinatario, { familia: 'FISCAL', plantilla: 'FACTURA', situacion: 'APROBADO' })).toBe(true);
+    expect(leCorresponde(destinatario, { familia: 'IDENTIDAD', plantilla: 'DNI', situacion: 'APROBADO' })).toBe(false);
+  });
+
+  it('un documento sin clasificar no cuela por filtro de familia', () => {
+    const destinatario = { ...base, familias: ['LOGISTICO'], plantillas: [], situaciones: ['OBSERVADO'] };
+    expect(leCorresponde(destinatario, { familia: null, plantilla: null, situacion: 'OBSERVADO' })).toBe(false);
+  });
+});
+
+describe('plantilla del correo', () => {
+  const contenido = {
+    titulo: 'Documento aprobado',
+    bajada: 'Se leyo y quedo listo.',
+    documento: 'remito.pdf',
+    tipo: 'REMITO',
+    estado: 'APROBADO',
+    confianza: '98%',
+    datos: [{ etiqueta: 'numero', valor: '0001-00000072' }],
+    hallazgos: [{ codigo: 'FECHA_MUY_ANTIGUA', severidad: 'advertencia', mensaje: 'Tiene mas de 90 dias.' }],
+    asociadoA: 'PEDIDO PED-100234',
+    enlace: 'https://localhost:3000/carga/ia-docs',
+    piePersonalizado: null,
+  };
+
+  it('el asunto identifica el documento', () => {
+    expect(asuntoDeCorreo(contenido)).toBe('Documento aprobado - remito.pdf');
+  });
+
+  it('la version en texto plano trae todo lo importante', () => {
+    const texto = textoDeCorreo(contenido);
+    expect(texto).toContain('0001-00000072');
+    expect(texto).toContain('PEDIDO PED-100234');
+    expect(texto).toContain('Tiene mas de 90 dias');
+  });
+
+  it('el html no rompe con datos que traen simbolos', () => {
+    const html = htmlDeCorreo({
+      ...contenido,
+      documento: 'remito <script>alert(1)</script>.pdf',
+      datos: [{ etiqueta: 'razon', valor: 'Bodega & Hijos "SA"' }],
+    });
+
+    expect(html).not.toContain('<script>alert(1)</script>');
+    expect(html).toContain('&lt;script&gt;');
+    expect(html).toContain('Bodega &amp; Hijos');
+  });
+
+  it('sin hallazgos no dibuja el bloque de revisar', () => {
+    expect(htmlDeCorreo({ ...contenido, hallazgos: [] })).not.toContain('Para revisar');
+  });
+
+  it('sin enlace no dibuja el boton', () => {
+    expect(htmlDeCorreo({ ...contenido, enlace: null })).not.toContain('Ver el documento');
   });
 });

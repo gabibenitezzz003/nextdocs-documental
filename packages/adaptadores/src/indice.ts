@@ -7,3 +7,4 @@ export * from './fabricas.js';
 export * from './arca.js';
 export * from './follow.js';
 export * from './paginado.js';
+export * from './correo.js';

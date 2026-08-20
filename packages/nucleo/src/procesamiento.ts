@@ -11,6 +11,8 @@ import {
   exigirTransicion,
   horasDeSla,
   plantillaDe,
+  comoDiaIso,
+  fecha,
   procesarCampos,
   severidadDeExcepcion,
   validar,
@@ -23,6 +25,7 @@ import { SISTEMA, auditar, encolarEvento } from './auditoria.js';
 import { verificarContraArca } from './fiscal.js';
 import { segundaPasada } from './reintento.js';
 import { dividirSiHaceFalta } from './segmentacion.js';
+import { programarEnvios } from './distribucion.js';
 import {
   EMISOR_GENERICO,
   aplicarCorrecciones,
@@ -83,6 +86,16 @@ async function plantillaPublicada(inquilinoId: string, codigo: string): Promise<
     [inquilinoId, codigo],
   );
   return rows[0]?.definicion ?? plantillaDe(codigo);
+}
+
+export function vencimientoDelDocumento(
+  plantilla: Plantilla,
+  valores: Record<string, { valorNormalizado: unknown }>,
+): string | null {
+  if (!plantilla.claveVencimiento) return null;
+  const crudo = valores[plantilla.claveVencimiento]?.valorNormalizado;
+  const dia = comoDiaIso(fecha(crudo));
+  return dia;
 }
 
 async function tiposDisponibles(inquilinoId: string): Promise<string[]> {
@@ -449,11 +462,15 @@ export async function procesarDocumento(
 
     await cliente.query(
       `UPDATE documento
-       SET confianza = $1, plantilla_codigo = $2, sujeto_tipo = $3, sujeto_id = $4
-       WHERE id = $5`,
+       SET confianza = $1, plantilla_codigo = $2, sujeto_tipo = $3, sujeto_id = $4,
+           familia = $5, vence_en = $6
+       WHERE id = $7`,
       [
         procesado.confianza, plantilla.codigo,
-        emparejamiento.sujeto?.tipo ?? null, emparejamiento.sujeto?.id ?? null, documento.id,
+        emparejamiento.sujeto?.tipo ?? null, emparejamiento.sujeto?.id ?? null,
+        plantilla.familia,
+        vencimientoDelDocumento(plantilla, procesado.valores),
+        documento.id,
       ],
     );
 
@@ -470,6 +487,15 @@ export async function procesarDocumento(
 
     if (decision.aprobable) {
       await cambiarEstado(cliente, documento, 'APROBADO', correlacionId);
+
+      await programarEnvios(cliente, {
+        inquilinoId: documento.inquilino_id,
+        documentoId: documento.id,
+        familia: plantilla.familia,
+        plantilla: plantilla.codigo,
+        situacion: 'APROBADO',
+        asunto: `Documento aprobado: ${documento.nombre_archivo}`,
+      });
 
       instantaneaId = randomUUID();
       const contenidoInstantanea = {
@@ -507,6 +533,15 @@ export async function procesarDocumento(
       });
     } else {
       await cambiarEstado(cliente, documento, 'OBSERVADO', correlacionId);
+
+      await programarEnvios(cliente, {
+        inquilinoId: documento.inquilino_id,
+        documentoId: documento.id,
+        familia: plantilla.familia,
+        plantilla: plantilla.codigo,
+        situacion: 'OBSERVADO',
+        asunto: `Documento para revisar: ${documento.nombre_archivo}`,
+      });
 
       excepcionId = randomUUID();
       const severidad = severidadDeExcepcion(decision.motivos);

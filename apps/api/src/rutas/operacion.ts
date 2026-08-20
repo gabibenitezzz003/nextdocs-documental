@@ -4,7 +4,13 @@ import { z } from 'zod';
 import { esquemaResolverExcepcion } from '@docvance/contratos';
 import { DocumentoInexistente, resolverExcepcion } from '@docvance/nucleo';
 
-import { colaDeExcepciones, eventosDeSalida, plantillasPublicadas } from '../consultas.js';
+import {
+  colaDeExcepciones,
+  eventosDeSalida,
+  plantillasPublicadas,
+  resumenDeVencimientos,
+  vencimientos,
+} from '../consultas.js';
 import { exigirPermiso } from '../contexto.js';
 import { noEncontrado } from '../problemas.js';
 
@@ -14,6 +20,14 @@ const esquemaFiltroExcepciones = z.object({
   estado: z.string().max(20).optional(),
   severidad: z.string().max(20).optional(),
   limite: z.coerce.number().int().min(1).max(200).default(50),
+});
+
+const esquemaFiltroVencimientos = z.object({
+  familia: z.string().max(20).optional(),
+  plantilla: z.string().max(40).optional(),
+  situacion: z.enum(['VENCIDO', 'POR_VENCER', 'VIGENTE']).optional(),
+  dias: z.coerce.number().int().min(1).max(365).default(30),
+  limite: z.coerce.number().int().min(1).max(500).default(200),
 });
 
 const esquemaFiltroEventos = z.object({
@@ -46,6 +60,18 @@ export async function rutasDeOperacion(servidor: FastifyInstance): Promise<void>
       if (error instanceof DocumentoInexistente) throw noEncontrado(`No existe la excepcion ${id}.`);
       throw error;
     }
+  });
+
+  servidor.get('/api/v1/vencimientos', async (pedido) => {
+    exigirPermiso(pedido.contexto, 'leer');
+    const filtro = esquemaFiltroVencimientos.parse(pedido.query);
+
+    const [documentos, resumen] = await Promise.all([
+      vencimientos(pedido.contexto.inquilinoId, filtro),
+      resumenDeVencimientos(pedido.contexto.inquilinoId, filtro.dias),
+    ]);
+
+    return { documentos, resumen, diasAviso: filtro.dias };
   });
 
   servidor.get('/api/v1/plantillas', async (pedido) => {

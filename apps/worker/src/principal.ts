@@ -4,6 +4,7 @@ import { cerrar } from '@docvance/db';
 
 import { procesar, type TrabajoProcesamiento } from './procesador.js';
 import { publicarPendientes } from './publicador.js';
+import { despacharCorreos } from './correo.js';
 
 const CONCURRENCIA = Number(process.env['WORKER_CONCURRENCIA'] ?? 2);
 const RITMO_MAXIMO = Number(process.env['WORKER_RITMO_MAXIMO'] ?? 6);
@@ -45,9 +46,10 @@ const reloj = setInterval(() => {
   if (publicando) return;
   publicando = true;
 
-  publicarPendientes()
-    .then((resumen) => {
-      if (resumen.revisados) registrar('bandeja de salida', { ...resumen });
+  Promise.all([publicarPendientes(), despacharCorreos()])
+    .then(([salida, correos]) => {
+      if (salida.revisados) registrar('bandeja de salida', { ...salida });
+      if (correos.revisados) registrar('correos', { ...correos });
     })
     .catch((error: Error) => {
       registrar('fallo la publicacion', { error: error.message });

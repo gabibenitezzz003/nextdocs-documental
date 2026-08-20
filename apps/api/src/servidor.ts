@@ -6,6 +6,7 @@ import Fastify, { type FastifyInstance } from 'fastify';
 import { configuracion } from './configuracion.js';
 import { registrarContexto } from './contexto.js';
 import { registrarManejadorDeErrores } from './problemas.js';
+import { rutasDeDistribucion } from './rutas/distribucion.js';
 import { rutasDeDocumentos } from './rutas/documentos.js';
 import { rutasDeOpenapi } from './rutas/openapi.js';
 import { rutasDeOperacion } from './rutas/operacion.js';
@@ -47,6 +48,7 @@ export async function armarServidor(): Promise<FastifyInstance> {
   await servidor.register(rutasDeOpenapi);
   await servidor.register(rutasDeDocumentos);
   await servidor.register(rutasDeOperacion);
+  await servidor.register(rutasDeDistribucion);
 
   return servidor;
 }

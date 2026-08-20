@@ -80,6 +80,8 @@ export async function resumenPorEstado(inquilinoId: string): Promise<Record<stri
 
 export interface Ficha {
   documento: Record<string, unknown>;
+  items: Record<string, unknown>[];
+  hijos: Record<string, unknown>[];
   archivo: Record<string, unknown> | null;
   corrida: Record<string, unknown> | null;
   valores: Record<string, unknown>[];
@@ -169,6 +171,8 @@ export async function ficha(inquilinoId: string, documentoId: string): Promise<F
 
   return {
     documento,
+    items: corrida ? await itemsDeCorrida(String(corrida['id'])) : [],
+    hijos: await documentosHijos(inquilinoId, documentoId),
     archivo: archivos[0] ?? null,
     corrida,
     valores,
@@ -261,6 +265,120 @@ export async function eventosDeSalida(
       ORDER BY creado_en DESC
       LIMIT $3`,
     [inquilinoId, estado.toUpperCase(), limite],
+  );
+  return rows;
+}
+
+export interface FiltroVencimientos {
+  familia?: string | undefined;
+  plantilla?: string | undefined;
+  situacion?: string | undefined;
+  dias: number;
+  limite: number;
+}
+
+export interface FilaVencimiento extends Record<string, unknown> {
+  id: string;
+  nombre_archivo: string;
+  plantilla_codigo: string | null;
+  familia: string | null;
+  estado: string;
+  vence_en: string;
+  dias_restantes: number;
+  situacion: string;
+  sujeto_tipo: string | null;
+  sujeto_id: string | null;
+}
+
+export async function vencimientos(
+  inquilinoId: string,
+  filtro: FiltroVencimientos,
+): Promise<FilaVencimiento[]> {
+  const condiciones = [
+    'd.inquilino_id = $1',
+    'd.vence_en IS NOT NULL',
+    "d.estado NOT IN ('RECHAZADO', 'DIVIDIDO')",
+  ];
+  const parametros: unknown[] = [inquilinoId];
+
+  if (filtro.familia) {
+    parametros.push(filtro.familia.toUpperCase());
+    condiciones.push(`d.familia = $${parametros.length}`);
+  }
+
+  if (filtro.plantilla) {
+    parametros.push(filtro.plantilla.toUpperCase());
+    condiciones.push(`d.plantilla_codigo = $${parametros.length}`);
+  }
+
+  parametros.push(filtro.dias);
+  const ventana = `$${parametros.length}`;
+
+  parametros.push(filtro.limite);
+
+  const { rows } = await conexion().query<FilaVencimiento>(
+    `SELECT d.id, d.nombre_archivo, d.plantilla_codigo, d.familia, d.estado,
+            d.vence_en, d.sujeto_tipo, d.sujeto_id,
+            (d.vence_en - CURRENT_DATE) AS dias_restantes,
+            CASE
+              WHEN d.vence_en < CURRENT_DATE THEN 'VENCIDO'
+              WHEN d.vence_en <= CURRENT_DATE + ${ventana}::integer THEN 'POR_VENCER'
+              ELSE 'VIGENTE'
+            END AS situacion
+       FROM documento d
+      WHERE ${condiciones.join(' AND ')}
+      ORDER BY d.vence_en ASC
+      LIMIT $${parametros.length}`,
+    parametros,
+  );
+
+  if (!filtro.situacion) return rows;
+  const buscada = filtro.situacion.toUpperCase();
+  return rows.filter((fila) => fila.situacion === buscada);
+}
+
+export async function resumenDeVencimientos(
+  inquilinoId: string,
+  dias: number,
+): Promise<Record<string, number>> {
+  const { rows } = await conexion().query<{ situacion: string; total: string }>(
+    `SELECT CASE
+              WHEN d.vence_en < CURRENT_DATE THEN 'VENCIDO'
+              WHEN d.vence_en <= CURRENT_DATE + $2::integer THEN 'POR_VENCER'
+              ELSE 'VIGENTE'
+            END AS situacion,
+            count(*) AS total
+       FROM documento d
+      WHERE d.inquilino_id = $1
+        AND d.vence_en IS NOT NULL
+        AND d.estado NOT IN ('RECHAZADO', 'DIVIDIDO')
+      GROUP BY 1`,
+    [inquilinoId, dias],
+  );
+
+  const base = { VENCIDO: 0, POR_VENCER: 0, VIGENTE: 0 };
+  for (const fila of rows) base[fila.situacion as keyof typeof base] = Number(fila.total);
+  return base;
+}
+
+export async function itemsDeCorrida(corridaId: string): Promise<Record<string, unknown>[]> {
+  const { rows } = await conexion().query<{ orden: number; contenido: Record<string, unknown> }>(
+    'SELECT orden, contenido FROM item_extraido WHERE corrida_id = $1 ORDER BY orden',
+    [corridaId],
+  );
+  return rows.map((r) => ({ orden: r.orden, ...r.contenido }));
+}
+
+export async function documentosHijos(
+  inquilinoId: string,
+  documentoId: string,
+): Promise<Record<string, unknown>[]> {
+  const { rows } = await conexion().query<Record<string, unknown>>(
+    `SELECT id, nombre_archivo, estado, plantilla_codigo, confianza, pagina_desde, pagina_hasta
+       FROM documento
+      WHERE inquilino_id = $1 AND documento_padre_id = $2
+      ORDER BY pagina_desde`,
+    [inquilinoId, documentoId],
   );
   return rows;
 }
