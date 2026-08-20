@@ -1,4 +1,9 @@
-import { cerrarColas, cerrarRedis, trabajador } from '@docvance/adaptadores';
+import {
+  cerrarColas,
+  cerrarRedis,
+  configuracionCorreo,
+  trabajador,
+} from '@docvance/adaptadores';
 import { NOMBRE_COLA_PROCESAMIENTO } from '@docvance/contratos';
 import { cerrar } from '@docvance/db';
 
@@ -75,9 +80,14 @@ for (const senal of ['SIGINT', 'SIGTERM'] as const) {
   });
 }
 
+const smtp = configuracionCorreo();
+
 registrar('worker arriba', {
   cola: NOMBRE_COLA_PROCESAMIENTO,
   concurrencia: CONCURRENCIA,
   ritmo: `${RITMO_MAXIMO} cada ${RITMO_VENTANA_MS / 1000}s`,
   cadenciaMs: CADENCIA_PUBLICACION_MS,
+  correo: smtp
+    ? { habilitado: true, anfitrion: smtp.anfitrion, puerto: smtp.puerto, seguro: smtp.seguro }
+    : { habilitado: false },
 });
