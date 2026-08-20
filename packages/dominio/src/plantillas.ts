@@ -56,6 +56,7 @@ export const FACTURA: Plantilla = {
     { clave: 'iva', tipo: 'numero', requerido: false, critico: false, umbral: 0.9 },
     { clave: 'total', tipo: 'numero', requerido: true, critico: true, umbral: 0.95 },
     { clave: 'nroOrdenCompra', tipo: 'texto', requerido: false, critico: false, umbral: 0.85 },
+    { clave: 'cuitReceptor', tipo: 'cuit', requerido: false, critico: false, umbral: 0.9 },
   ],
   tabla: { clave: 'items', columnas: ['descripcion', 'cantidad', 'precioUnitario', 'importe'] },
   clavesEmparejamiento: [
@@ -67,7 +68,11 @@ export const FACTURA: Plantilla = {
     { codigo: 'CUIT_INVALIDO', tipo: 'INTRINSECA', severidad: 'error', mensaje: 'El CUIT no supera la validacion de digito verificador.' },
     { codigo: 'FECHA_FUTURA', tipo: 'TEMPORAL', severidad: 'error', mensaje: 'La fecha de emision es posterior a hoy.' },
     { codigo: 'SIN_ORDEN_COMPRA', tipo: 'OPERATIVA', severidad: 'advertencia', mensaje: 'La factura no referencia una orden de compra.' },
+    { codigo: 'CAE_RECHAZADO', tipo: 'MAESTROS', severidad: 'critico', mensaje: 'ARCA no reconoce el comprobante con ese CAE.' },
+    { codigo: 'CAE_OBSERVADO', tipo: 'MAESTROS', severidad: 'error', mensaje: 'ARCA observo el comprobante.' },
+    { codigo: 'CAE_NO_VERIFICABLE', tipo: 'MAESTROS', severidad: 'advertencia', mensaje: 'No se pudo constatar el comprobante contra ARCA.' },
   ],
+  validacionFiscal: true,
 };
 
 export const PLANTILLAS_BASE: Record<string, Plantilla> = { REMITO, FACTURA };

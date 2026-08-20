@@ -1,8 +1,70 @@
+import { createHash } from 'node:crypto';
+
 import { REMITO, FACTURA } from '@docvance/dominio';
 
 import { cerrar, enTransaccion } from './conexion.js';
 
 const INQUILINO_DEMO = '11111111-1111-1111-1111-111111111111';
+
+export const CLAVE_API_DEMO = 'dvk_demo_4f2a9c7b1e6d8035a1c4b9e2f7d60831';
+
+const OBJETOS = [
+  {
+    tipo: 'PEDIDO',
+    claveExterna: 'PED-100234',
+    etiqueta: 'Pedido PED-100234 de Supermercados del Sur',
+    atributos: {
+      nroPedido: 'PED-100234',
+      numero: '0004-00001234',
+      cuitDestinatario: '30-71044444-2',
+      razonSocialDestinatario: 'Supermercados del Sur SA',
+      bultos: 12,
+    },
+  },
+  {
+    tipo: 'PEDIDO',
+    claveExterna: 'PED-100235',
+    etiqueta: 'Pedido PED-100235 de Distribuidora Norte',
+    atributos: {
+      nroPedido: 'PED-100235',
+      numero: '0004-00001235',
+      cuitDestinatario: '30-70999888-1',
+      razonSocialDestinatario: 'Distribuidora Norte SRL',
+      bultos: 8,
+    },
+  },
+  {
+    tipo: 'CLIENTE',
+    claveExterna: 'CLI-0001',
+    etiqueta: 'Supermercados del Sur SA',
+    atributos: {
+      cuitDestinatario: '30-71044444-2',
+      razonSocialDestinatario: 'Supermercados del Sur SA',
+    },
+  },
+  {
+    tipo: 'VEHICULO',
+    claveExterna: 'AB123CD',
+    etiqueta: 'Camion AB123CD',
+    atributos: { patente: 'AB123CD' },
+  },
+  {
+    tipo: 'ORDEN_COMPRA',
+    claveExterna: 'OC-55021',
+    etiqueta: 'Orden de compra OC-55021',
+    atributos: {
+      nroOrdenCompra: 'OC-55021',
+      cuitEmisor: '30-68888777-9',
+      total: 184500,
+    },
+  },
+  {
+    tipo: 'PROVEEDOR',
+    claveExterna: 'PRV-0009',
+    etiqueta: 'Insumos Industriales SA',
+    atributos: { cuitEmisor: '30-68888777-9' },
+  },
+];
 
 const USUARIOS = [
   { email: 'admin@demo.local', nombre: 'Ana Administradora', rol: 'ADMIN_INQUILINO' },
@@ -48,6 +110,31 @@ export async function sembrar(): Promise<void> {
       );
     }
 
+    for (const objeto of OBJETOS) {
+      await cliente.query(
+        `INSERT INTO objeto_negocio (inquilino_id, tipo, clave_externa, etiqueta, atributos)
+         VALUES ($1, $2, $3, $4, $5)
+         ON CONFLICT (inquilino_id, tipo, clave_externa)
+         DO UPDATE SET etiqueta = EXCLUDED.etiqueta,
+                       atributos = EXCLUDED.atributos,
+                       estado = 'ABIERTO',
+                       actualizado_en = now()`,
+        [INQUILINO_DEMO, objeto.tipo, objeto.claveExterna, objeto.etiqueta, JSON.stringify(objeto.atributos)],
+      );
+    }
+
+    await cliente.query(
+      `INSERT INTO clave_api (inquilino_id, nombre, prefijo, huella, rol)
+       VALUES ($1, $2, $3, $4, 'ADMIN_INQUILINO')
+       ON CONFLICT (huella) DO UPDATE SET activa = true`,
+      [
+        INQUILINO_DEMO,
+        'Clave de demostracion',
+        CLAVE_API_DEMO.slice(0, 12),
+        createHash('sha256').update(CLAVE_API_DEMO).digest('hex'),
+      ],
+    );
+
     await cliente.query(
       `INSERT INTO suscripcion_webhook (inquilino_id, url, secreto, tipos_evento)
        VALUES ($1, $2, $3, $4)
@@ -61,7 +148,8 @@ export async function sembrar(): Promise<void> {
     );
   });
 
-  process.stdout.write('sembrado: inquilino Demo Logistics con 3 usuarios y 2 plantillas\n');
+  process.stdout.write('sembrado: inquilino Demo Logistics, 3 usuarios, 2 plantillas y 6 objetos de negocio\n');
+  process.stdout.write(`clave de api: ${CLAVE_API_DEMO}\n`);
 }
 
 const ejecutadoDirecto = process.argv[1]?.includes('sembrar');

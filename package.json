@@ -4,7 +4,7 @@
   "type": "module",
   "packageManager": "pnpm@9.12.0",
   "engines": {
-    "node": ">=20"
+    "node": ">=22"
   },
   "scripts": {
     "dev": "turbo run dev",
@@ -17,7 +17,9 @@
     "db:sembrar": "pnpm --filter @docvance/db sembrar",
     "infra:arriba": "docker compose -f infra/docker/docker-compose.yml up -d",
     "infra:abajo": "docker compose -f infra/docker/docker-compose.yml down",
-    "infra:limpiar": "docker compose -f infra/docker/docker-compose.yml down -v"
+    "infra:limpiar": "docker compose -f infra/docker/docker-compose.yml down -v",
+    "api": "pnpm --filter @docvance/api inicio",
+    "worker": "pnpm --filter @docvance/worker inicio"
   },
   "devDependencies": {
     "@types/node": "^22.7.5",

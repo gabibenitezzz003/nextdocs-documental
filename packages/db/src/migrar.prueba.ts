@@ -2,6 +2,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
 import { cerrar, conexion } from './conexion.js';
 import { migrar } from './migrar.js';
+import { exigirBaseDePruebas, usarBaseDePruebas } from './pruebas.js';
 
 const INQUILINO_A = '11111111-1111-1111-1111-111111111111';
 const INQUILINO_B = '22222222-2222-2222-2222-222222222222';
@@ -12,6 +13,8 @@ async function limpiar(): Promise<void> {
 
 describe('migraciones y garantias del esquema', () => {
   beforeAll(async () => {
+    await usarBaseDePruebas();
+    exigirBaseDePruebas();
     await migrar();
     await limpiar();
     await conexion().query(

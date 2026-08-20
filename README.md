@@ -18,8 +18,20 @@ cp .env.ejemplo .env
 pnpm infra:arriba
 pnpm db:migrar
 pnpm db:sembrar
+pnpm build
 pnpm dev
 ```
+
+El sembrado deja una clave de API de demostracion y la imprime en pantalla. Con esa
+clave ya podes cargar documentos:
+
+```bash
+curl http://localhost:4000/api/v1/documentos   -H "Authorization: Bearer <la clave que imprimio el sembrado>"
+```
+
+Ademas de la clave hay credenciales de usuario para probar los roles:
+`Bearer usuario:admin@demo.local`, `usuario:operador@demo.local` y
+`usuario:revisor@demo.local`.
 
 | Servicio | Puerto | Para qué |
 |---|---|---|
@@ -60,8 +72,28 @@ docs/          arquitectura y decisiones
 ```
 
 Las dependencias apuntan hacia el dominio, nunca al revés. `packages/dominio` no
-importa nada de NestJS, Postgres ni ningún proveedor de IA: son reglas puras con
-tests que corren en milisegundos.
+importa Fastify, Postgres ni ningún proveedor de IA: son reglas puras con tests
+que corren en milisegundos.
+
+La API no habla con el proveedor de IA. Recibe, guarda el original y encola. El
+único proceso que llama al modelo es el worker.
+
+## Proveedor de IA
+
+Con `PROVEEDOR_IA=simulado` el motor devuelve lo que le hayan guionado los tests,
+asi que sirve para probar el circuito completo sin gastar tokens, pero no lee el
+documento de verdad.
+
+Para leer documentos reales, en `.env`:
+
+```
+PROVEEDOR_IA=gemini
+GOOGLE_API_KEY=<tu clave>
+GEMINI_MODELO=gemini-2.0-flash
+```
+
+Y reiniciar el worker. La clave viaja en la cabecera `x-goog-api-key`, nunca en la
+url.
 
 ## Invariantes
 

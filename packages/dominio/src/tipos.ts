@@ -63,6 +63,7 @@ export interface Plantilla {
   tabla?: { clave: string; columnas: string[] };
   clavesEmparejamiento: ClaveEmparejamiento[];
   reglas: ReglaPlantilla[];
+  validacionFiscal?: boolean;
 }
 
 export interface Evidencia {

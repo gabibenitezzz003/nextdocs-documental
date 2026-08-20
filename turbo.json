@@ -1,35 +1,71 @@
 {
   "$schema": "https://turbo.build/schema.json",
-  "globalEnv": ["NODE_ENV"],
+  "globalEnv": [
+    "NODE_ENV"
+  ],
   "tasks": {
     "build": {
-      "dependsOn": ["^build"],
-      "outputs": ["dist/**", ".next/**"]
+      "dependsOn": [
+        "^build"
+      ],
+      "outputs": [
+        "dist/**",
+        ".next/**"
+      ]
     },
     "dev": {
       "cache": false,
       "persistent": true,
-      "env": ["POSTGRES_URL", "REDIS_URL", "API_PUERTO", "WEB_PUERTO", "ALMACENAMIENTO_*", "JWT_SECRETO", "PROVEEDOR_IA", "GOOGLE_API_KEY"]
+      "env": [
+        "POSTGRES_URL",
+        "REDIS_URL",
+        "API_PUERTO",
+        "API_ANFITRION",
+        "API_URL",
+        "API_ORIGENES",
+        "WEB_PUERTO",
+        "ALMACENAMIENTO_*",
+        "JWT_SECRETO",
+        "PROVEEDOR_IA",
+        "GOOGLE_API_KEY",
+        "GEMINI_MODELO",
+        "WORKER_*",
+        "LOG_NIVEL"
+      ]
     },
     "lint": {},
     "typecheck": {
-      "dependsOn": ["^build"]
+      "dependsOn": [
+        "^build"
+      ]
     },
     "test": {
-      "dependsOn": ["^build"]
+      "dependsOn": [
+        "^build"
+      ]
     },
     "test:integracion": {
-      "dependsOn": ["^build"],
+      "dependsOn": [
+        "^build"
+      ],
       "cache": false,
-      "env": ["POSTGRES_URL", "REDIS_URL", "ALMACENAMIENTO_*"]
+      "env": [
+        "POSTGRES_URL",
+        "REDIS_URL",
+        "ALMACENAMIENTO_*"
+      ]
     },
     "migrar": {
       "cache": false,
-      "env": ["POSTGRES_URL"]
+      "env": [
+        "POSTGRES_URL"
+      ]
     },
     "sembrar": {
       "cache": false,
-      "env": ["POSTGRES_URL"]
+      "env": [
+        "POSTGRES_URL"
+      ]
     }
   }
 }

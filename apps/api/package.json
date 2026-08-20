@@ -1,0 +1,33 @@
+{
+  "name": "@docvance/api",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "./dist/principal.js",
+  "scripts": {
+    "dev": "tsx watch --env-file-if-exists=../../.env src/principal.ts",
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "lint": "eslint src",
+    "inicio": "node --env-file-if-exists=../../.env dist/principal.js",
+    "test:integracion": "vitest run"
+  },
+  "dependencies": {
+    "@docvance/adaptadores": "workspace:*",
+    "@docvance/contratos": "workspace:*",
+    "@docvance/db": "workspace:*",
+    "@docvance/dominio": "workspace:*",
+    "@docvance/nucleo": "workspace:*",
+    "@fastify/cors": "^10.0.1",
+    "@types/pg": "^8.11.10",
+    "fastify": "^5.1.0",
+    "pg": "^8.13.0",
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "@types/node": "^22.7.5",
+    "tsx": "^4.19.1",
+    "typescript": "^5.6.3",
+    "vitest": "^2.1.2"
+  }
+}
