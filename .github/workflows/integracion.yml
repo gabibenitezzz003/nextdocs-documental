@@ -4,6 +4,7 @@ on:
   push:
     branches: [main]
   pull_request:
+  workflow_dispatch:
 
 jobs:
   verificar:
@@ -16,34 +17,55 @@ jobs:
           POSTGRES_USER: docvance
           POSTGRES_PASSWORD: docvance
           POSTGRES_DB: docvance
-        ports: ["5433:5432"]
+        ports:
+          - 5433:5432
         options: >-
           --health-cmd "pg_isready -U docvance"
-          --health-interval 5s --health-timeout 3s --health-retries 20
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 20
+
       redis:
         image: redis:7-alpine
-        ports: ["6380:6379"]
+        ports:
+          - 6380:6379
         options: >-
           --health-cmd "redis-cli ping"
-          --health-interval 5s --health-timeout 3s --health-retries 20
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 20
+
+    env:
+      POSTGRES_URL: postgresql://docvance:docvance@localhost:5433/docvance
+      REDIS_URL: redis://localhost:6380
 
     steps:
       - uses: actions/checkout@v4
+
       - uses: pnpm/action-setup@v4
-        with: { version: 9 }
+
       - uses: actions/setup-node@v4
         with:
           node-version: 20
           cache: pnpm
-      - run: pnpm install --frozen-lockfile
-      - run: pnpm lint
-      - run: pnpm typecheck
-      - run: pnpm test
-      - run: pnpm db:migrar
-        env:
-          POSTGRES_URL: postgresql://docvance:docvance@localhost:5433/docvance
-      - run: pnpm test:integracion
-        env:
-          POSTGRES_URL: postgresql://docvance:docvance@localhost:5433/docvance
-          REDIS_URL: redis://localhost:6380
-      - run: pnpm build
+
+      - name: Instalar dependencias
+        run: pnpm install --frozen-lockfile
+
+      - name: Revisar estilo
+        run: pnpm lint
+
+      - name: Revisar tipos
+        run: pnpm typecheck
+
+      - name: Pruebas unitarias
+        run: pnpm test
+
+      - name: Migrar base
+        run: pnpm db:migrar
+
+      - name: Pruebas de integracion
+        run: pnpm test:integracion
+
+      - name: Compilar
+        run: pnpm build

@@ -1,11 +1,35 @@
 {
   "$schema": "https://turbo.build/schema.json",
+  "globalEnv": ["NODE_ENV"],
   "tasks": {
-    "build": { "dependsOn": ["^build"], "outputs": ["dist/**", ".next/**"] },
-    "dev": { "cache": false, "persistent": true },
+    "build": {
+      "dependsOn": ["^build"],
+      "outputs": ["dist/**", ".next/**"]
+    },
+    "dev": {
+      "cache": false,
+      "persistent": true,
+      "env": ["POSTGRES_URL", "REDIS_URL", "API_PUERTO", "WEB_PUERTO", "ALMACENAMIENTO_*", "JWT_SECRETO", "PROVEEDOR_IA", "GOOGLE_API_KEY"]
+    },
     "lint": {},
-    "typecheck": { "dependsOn": ["^build"] },
-    "test": { "dependsOn": ["^build"] },
-    "test:integracion": { "cache": false }
+    "typecheck": {
+      "dependsOn": ["^build"]
+    },
+    "test": {
+      "dependsOn": ["^build"]
+    },
+    "test:integracion": {
+      "dependsOn": ["^build"],
+      "cache": false,
+      "env": ["POSTGRES_URL", "REDIS_URL", "ALMACENAMIENTO_*"]
+    },
+    "migrar": {
+      "cache": false,
+      "env": ["POSTGRES_URL"]
+    },
+    "sembrar": {
+      "cache": false,
+      "env": ["POSTGRES_URL"]
+    }
   }
 }

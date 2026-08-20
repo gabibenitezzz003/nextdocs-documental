@@ -2,7 +2,6 @@ import { describe, expect, it } from 'vitest';
 
 import {
   CONFIANZA_SIN_EVIDENCIA,
-  camposObservados,
   confianzaGlobal,
   cuitValido,
   decidir,
