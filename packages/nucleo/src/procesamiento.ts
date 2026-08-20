@@ -21,6 +21,7 @@ import {
 
 import { SISTEMA, auditar, encolarEvento } from './auditoria.js';
 import { verificarContraArca } from './fiscal.js';
+import { segundaPasada } from './reintento.js';
 import {
   EMISOR_GENERICO,
   aplicarCorrecciones,
@@ -79,6 +80,17 @@ async function plantillaPublicada(inquilinoId: string, codigo: string): Promise<
     [inquilinoId, codigo],
   );
   return rows[0]?.definicion ?? plantillaDe(codigo);
+}
+
+async function tiposDisponibles(inquilinoId: string): Promise<string[]> {
+  const { rows } = await conexion().query<{ codigo: string }>(
+    `SELECT DISTINCT codigo FROM plantilla_documental
+      WHERE inquilino_id = $1 AND estado = 'PUBLICADA'`,
+    [inquilinoId],
+  );
+
+  const publicados = rows.map((r) => r.codigo);
+  return publicados.length ? publicados : Object.keys(PLANTILLAS_BASE);
 }
 
 async function observarPorFalla(
@@ -208,7 +220,7 @@ export async function procesarDocumento(
       contenido,
       tipoMime: documento.tipo_mime,
       nombreArchivo: documento.nombre_archivo,
-      plantillasPosibles: Object.keys(PLANTILLAS_BASE),
+      plantillasPosibles: await tiposDisponibles(documento.inquilino_id),
     });
   } catch (error) {
     const e = error as ErrorMotorDocumental;
@@ -263,7 +275,15 @@ export async function procesarDocumento(
     return observarPorFalla(documento, correlacionId, e.codigo ?? 'EXTRACCION_FALLIDA', e.message);
   }
 
-  const procesado = procesarCampos(plantilla, extraccion.campos);
+  const primera = procesarCampos(plantilla, extraccion.campos);
+
+  const reintento = await segundaPasada(
+    dependencias.motor,
+    { contenido, tipoMime: documento.tipo_mime, plantilla, pistas: pistasGenerales },
+    primera,
+  );
+
+  const procesado = reintento.procesado;
   const terminadoEn = new Date();
 
   const emisorClave = claveDeEmisor(procesado.valores);

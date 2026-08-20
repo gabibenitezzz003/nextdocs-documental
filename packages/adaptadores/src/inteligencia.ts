@@ -42,13 +42,25 @@ export const ADVERTENCIA_INYECCION = [
 
 const SALTO = String.fromCharCode(10);
 
+const GUIA_POR_TIPO: Record<string, string> = {
+  fecha: 'devolvela como AAAA-MM-DD',
+  cuit: 'once digitos, con o sin guiones, tal como figura',
+  patente: 'formato AAA000 o AA000AA, sin espacios',
+  numero: 'solo el numero, sin simbolo de moneda ni separadores de miles',
+  booleano: 'true o false',
+  documento: 'solo los digitos del numero de documento',
+};
+
 export function promptDeExtraccion(plantilla: Plantilla, pistas: string[] = []): string {
   const campos = plantilla.campos.map((c) => {
     const partes = [`- ${c.clave} (${c.tipo})`];
     if (c.requerido) partes.push('requerido');
-    if (c.patron) partes.push(`formato ${c.patron}`);
+    if (c.critico) partes.push('critico');
+    if (c.patron) partes.push(`debe cumplir ${c.patron}`);
+    const guia = GUIA_POR_TIPO[c.tipo];
+    if (guia) partes.push(guia);
     return partes.join(', ');
-  }).join('\n');
+  }).join(SALTO);
 
   const esquema = {
     campos: Object.fromEntries(plantilla.campos.map((c) => [c.clave, {
@@ -81,7 +93,10 @@ export function promptDeExtraccion(plantilla: Plantilla, pistas: string[] = []):
     '2. La confianza refleja que tan seguro estas de haber leido bien ese campo.',
     '3. Una confianza mayor a 0.9 exige que el texto sea claramente legible.',
     '4. La evidencia debe apuntar a donde leiste el dato, con pagina y recorte.',
-    '5. Copia los valores tal como figuran, sin reformatear.',
+    '5. Copia los valores tal como figuran, salvo lo que pidan las guias de formato.',
+    '6. Si el documento tiene letra de comprobante (A, B, C o M), incluila en tipoComprobante.',
+    '7. Los numeros de comprobante van completos, con punto de venta y correlativo.',
+    '8. Las fechas van en formato AAAA-MM-DD.',
     '',
     pistas.length
       ? [

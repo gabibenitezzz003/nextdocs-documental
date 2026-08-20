@@ -2,6 +2,10 @@ import { describe, expect, it } from 'vitest';
 
 import {
   CONFIANZA_SIN_EVIDENCIA,
+  DNI,
+  LICENCIA_CONDUCIR,
+  VTV,
+  plantillasDeFamilia,
   confianzaGlobal,
   cuitValido,
   decidir,
@@ -243,5 +247,101 @@ describe('plantillas', () => {
         if (campo.critico) expect(campo.requerido).toBe(true);
       }
     }
+  });
+});
+
+describe('catalogo de documentos legales', () => {
+  it('cubre identidad, vehiculos, fiscal y logistica', () => {
+    expect(plantillaDe('DNI')?.familia).toBe('IDENTIDAD');
+    expect(plantillaDe('LICENCIA_CONDUCIR')?.familia).toBe('IDENTIDAD');
+    expect(plantillaDe('VTV')?.familia).toBe('VEHICULAR');
+    expect(plantillaDe('SEGURO_VEHICULAR')?.familia).toBe('VEHICULAR');
+    expect(plantillaDe('FACTURA')?.familia).toBe('FISCAL');
+    expect(plantillaDe('REMITO')?.familia).toBe('LOGISTICO');
+  });
+
+  it('encuentra la plantilla aunque el codigo venga con espacios o guiones', () => {
+    expect(plantillaDe('licencia conducir')?.codigo).toBe('LICENCIA_CONDUCIR');
+    expect(plantillaDe('Seguro-Vehicular')?.codigo).toBe('SEGURO_VEHICULAR');
+  });
+
+  it('agrupa por familia', () => {
+    const vehiculares = plantillasDeFamilia('VEHICULAR').map((p) => p.codigo);
+    expect(vehiculares).toContain('VTV');
+    expect(vehiculares).toContain('CEDULA_VEHICULAR');
+    expect(vehiculares).not.toContain('FACTURA');
+  });
+});
+
+describe('vigencia de documentos', () => {
+  const enDias = (dias: number) => {
+    const f = new Date();
+    f.setDate(f.getDate() + dias);
+    return f.toISOString().slice(0, 10);
+  };
+
+  const validarVtv = (vencimiento: string | null, resultado = 'APROBADO') =>
+    validar({
+      plantilla: VTV,
+      valores: {
+        patente: { valorLeido: 'AB123CD', valorNormalizado: 'AB123CD', confianza: 0.97, evidencia: null },
+        fechaVencimiento: { valorLeido: vencimiento, valorNormalizado: vencimiento, confianza: 0.95, evidencia: null },
+        resultado: { valorLeido: resultado, valorNormalizado: resultado, confianza: 0.95, evidencia: null },
+      },
+      observaciones: [],
+      emparejamiento: { candidatos: [], sujeto: null, resolucion: 'SIN_CANDIDATOS', hallazgos: [] },
+    });
+
+  it('una vtv vencida es critica', () => {
+    const codigos = validarVtv(enDias(-40)).hallazgos.map((h) => h.codigo);
+    expect(codigos).toContain('VENCIDO');
+    expect(validarVtv(enDias(-40)).severidadMaxima).toBe('critico');
+  });
+
+  it('una vtv que vence pronto avisa sin bloquear', () => {
+    const salida = validarVtv(enDias(10));
+    expect(salida.hallazgos.map((h) => h.codigo)).toContain('POR_VENCER');
+    expect(salida.cantidadErrores).toBe(0);
+  });
+
+  it('una vtv vigente no deja hallazgos', () => {
+    expect(validarVtv(enDias(200)).hallazgos).toHaveLength(0);
+  });
+
+  it('sin fecha de vencimiento legible es un error', () => {
+    expect(validarVtv(null).hallazgos.map((h) => h.codigo)).toContain('SIN_VENCIMIENTO');
+  });
+
+  it('una verificacion no aprobada es critica aunque este vigente', () => {
+    const codigos = validarVtv(enDias(200), 'RECHAZADO').hallazgos.map((h) => h.codigo);
+    expect(codigos).toContain('VERIFICACION_NO_APROBADA');
+  });
+
+  it('un dni viejo no se marca como fecha muy antigua', () => {
+    const salida = validar({
+      plantilla: DNI,
+      valores: {
+        fechaEmision: { valorLeido: '2019-05-10', valorNormalizado: '2019-05-10', confianza: 0.95, evidencia: null },
+        fechaVencimiento: { valorLeido: enDias(400), valorNormalizado: enDias(400), confianza: 0.95, evidencia: null },
+      },
+      observaciones: [],
+      emparejamiento: { candidatos: [], sujeto: null, resolucion: 'SIN_CANDIDATOS', hallazgos: [] },
+    });
+
+    expect(salida.hallazgos.map((h) => h.codigo)).not.toContain('FECHA_MUY_ANTIGUA');
+  });
+
+  it('una licencia sin clase profesional no habilita carga', () => {
+    const salida = validar({
+      plantilla: LICENCIA_CONDUCIR,
+      valores: {
+        clases: { valorLeido: 'B1', valorNormalizado: 'B1', confianza: 0.95, evidencia: null },
+        fechaVencimiento: { valorLeido: enDias(300), valorNormalizado: enDias(300), confianza: 0.95, evidencia: null },
+      },
+      observaciones: [],
+      emparejamiento: { candidatos: [], sujeto: null, resolucion: 'SIN_CANDIDATOS', hallazgos: [] },
+    });
+
+    expect(salida.hallazgos.map((h) => h.codigo)).toContain('SIN_CLASE_PROFESIONAL');
   });
 });

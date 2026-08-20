@@ -1,9 +1,11 @@
 import type { Plantilla } from './tipos.js';
+import { CATALOGO_LEGAL } from './catalogo.js';
 
 export const REMITO: Plantilla = {
   codigo: 'REMITO',
   version: 1,
   nombre: 'Remito conformado',
+  familia: 'LOGISTICO',
   umbralAutoAprobacion: 0.92,
   politicaFisica: 'REQUERIDO',
   campos: [
@@ -43,6 +45,7 @@ export const FACTURA: Plantilla = {
   codigo: 'FACTURA',
   version: 1,
   nombre: 'Factura de compra',
+  familia: 'FISCAL',
   umbralAutoAprobacion: 0.95,
   politicaFisica: 'NO_REQUERIDO',
   campos: [
@@ -75,8 +78,30 @@ export const FACTURA: Plantilla = {
   validacionFiscal: true,
 };
 
-export const PLANTILLAS_BASE: Record<string, Plantilla> = { REMITO, FACTURA };
+export const NOTA_CREDITO: Plantilla = {
+  ...FACTURA,
+  codigo: 'NOTA_CREDITO',
+  nombre: 'Nota de credito',
+  clavesEmparejamiento: [
+    { objeto: 'FACTURA', campo: 'comprobanteAsociado', metodo: 'COMPROBANTE', peso: 70 },
+    { objeto: 'PROVEEDOR', campo: 'cuitEmisor', metodo: 'EXACTO', peso: 40 },
+  ],
+};
+
+export const NOTA_DEBITO: Plantilla = {
+  ...NOTA_CREDITO,
+  codigo: 'NOTA_DEBITO',
+  nombre: 'Nota de debito',
+};
+
+export const PLANTILLAS_BASE: Record<string, Plantilla> = Object.fromEntries(
+  [REMITO, FACTURA, NOTA_CREDITO, NOTA_DEBITO, ...CATALOGO_LEGAL].map((p) => [p.codigo, p]),
+);
 
 export function plantillaDe(codigo: string): Plantilla | null {
-  return PLANTILLAS_BASE[String(codigo ?? '').toUpperCase()] ?? null;
+  return PLANTILLAS_BASE[String(codigo ?? '').toUpperCase().replace(/[\s-]+/g, '_')] ?? null;
+}
+
+export function plantillasDeFamilia(familia: Plantilla['familia']): Plantilla[] {
+  return Object.values(PLANTILLAS_BASE).filter((p) => p.familia === familia);
 }

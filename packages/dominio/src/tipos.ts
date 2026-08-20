@@ -1,4 +1,12 @@
-export type TipoDato = 'texto' | 'numero' | 'fecha' | 'cuit' | 'patente' | 'booleano';
+export type TipoDato = 'texto' | 'numero' | 'fecha' | 'cuit' | 'patente' | 'booleano' | 'documento';
+
+export type FamiliaDocumento =
+  | 'FISCAL'
+  | 'LOGISTICO'
+  | 'IDENTIDAD'
+  | 'VEHICULAR'
+  | 'HABILITANTE'
+  | 'COMERCIAL';
 
 export type Severidad = 'info' | 'advertencia' | 'error' | 'critico';
 
@@ -57,6 +65,9 @@ export interface Plantilla {
   codigo: string;
   version: number;
   nombre: string;
+  familia: FamiliaDocumento;
+  claveVencimiento?: string;
+  diasAvisoVencimiento?: number;
   umbralAutoAprobacion: number;
   politicaFisica: 'NO_REQUERIDO' | 'REQUERIDO';
   campos: CampoPlantilla[];

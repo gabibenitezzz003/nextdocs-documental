@@ -1,6 +1,6 @@
 import { createHash } from 'node:crypto';
 
-import { REMITO, FACTURA } from '@docvance/dominio';
+import { PLANTILLAS_BASE } from '@docvance/dominio';
 
 import { cerrar, enTransaccion } from './conexion.js';
 
@@ -90,7 +90,7 @@ export async function sembrar(): Promise<void> {
       );
     }
 
-    for (const plantilla of [REMITO, FACTURA]) {
+    for (const plantilla of Object.values(PLANTILLAS_BASE)) {
       await cliente.query(
         `INSERT INTO plantilla_documental
            (inquilino_id, codigo, nombre, version, estado, umbral_auto_aprobacion,
@@ -148,7 +148,7 @@ export async function sembrar(): Promise<void> {
     );
   });
 
-  process.stdout.write('sembrado: inquilino Demo Logistics, 3 usuarios, 2 plantillas y 6 objetos de negocio\n');
+  process.stdout.write(`sembrado: inquilino Demo Logistics, 3 usuarios, ${Object.keys(PLANTILLAS_BASE).length} plantillas y 6 objetos de negocio\n`);
   process.stdout.write(`clave de api: ${CLAVE_API_DEMO}\n`);
 }
 
