@@ -14,3 +14,6 @@ secretos/
 *.key
 *.crt
 *.csr
+
+carga*.json
+*.base64
