@@ -17,7 +17,8 @@
     "lint": "eslint src",
     "migrar": "tsx --env-file-if-exists=../../.env src/migrar.ts",
     "sembrar": "tsx --env-file-if-exists=../../.env src/sembrar.ts",
-    "test:integracion": "vitest run"
+    "test:integracion": "vitest run",
+    "limpiar": "tsx --env-file-if-exists=../../.env src/limpiar.ts"
   },
   "dependencies": {
     "pg": "^8.13.0",

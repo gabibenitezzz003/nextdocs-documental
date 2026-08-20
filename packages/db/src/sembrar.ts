@@ -152,7 +152,9 @@ export async function sembrar(): Promise<void> {
       ],
     );
 
-    for (const vigencia of VIGENCIAS_DEMO) {
+    const conVigenciasDemo = process.env['SEMBRAR_VIGENCIAS_DEMO'] !== 'false';
+
+    for (const vigencia of conVigenciasDemo ? VIGENCIAS_DEMO : []) {
       await cliente.query(
         `INSERT INTO documento
            (inquilino_id, origen, huella, tipo_mime, nombre_archivo, estado, plantilla_codigo,

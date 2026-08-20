@@ -77,3 +77,51 @@ correr si no termina en `_pruebas`:
 ```bash
 pnpm --filter @docvance/nucleo test:integracion
 ```
+
+## Vaciar el modulo
+
+Para mostrarlo sin datos de prueba adentro.
+
+Borra documentos, excepciones, envios, eventos y bitacora. Deja el inquilino,
+los usuarios, las plantillas y la clave de api:
+
+```bash
+pnpm db:limpiar
+```
+
+Lo mismo, y ademas borra los objetos de negocio de ejemplo y los destinatarios
+de correo:
+
+```bash
+pnpm db:vaciar
+```
+
+Los archivos originales quedan huerfanos en MinIO. Son inofensivos porque
+ninguna fila los referencia, pero si querés borrarlos tambien:
+
+```bash
+pnpm infra:limpiar && pnpm infra:arriba && pnpm db:migrar && pnpm db:sembrar
+```
+
+Eso borra los volumenes y arranca de cero.
+
+## Sembrar sin datos de demostracion
+
+El sembrado crea ocho documentos con vencimiento para que la pestaña de
+vigencias no se vea vacia. Para que no los cree:
+
+```bash
+SEMBRAR_VIGENCIAS_DEMO=false pnpm db:sembrar
+```
+
+En PowerShell:
+
+```bash
+$env:SEMBRAR_VIGENCIAS_DEMO="false"; pnpm db:sembrar
+```
+
+Los seis objetos de negocio de ejemplo (pedidos, cliente, vehiculo, orden de
+compra, proveedor) siguen creandose: sin ellos el emparejamiento no tiene contra
+que comparar y todos los documentos quedan sin asociar.
+
+Para tambien sacarlos, sembra y despues corre `pnpm db:vaciar`.

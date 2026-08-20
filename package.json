@@ -19,7 +19,9 @@
     "infra:abajo": "docker compose -f infra/docker/docker-compose.yml down",
     "infra:limpiar": "docker compose -f infra/docker/docker-compose.yml down -v",
     "api": "pnpm --filter @docvance/api inicio",
-    "worker": "pnpm --filter @docvance/worker inicio"
+    "worker": "pnpm --filter @docvance/worker inicio",
+    "db:limpiar": "pnpm --filter @docvance/db limpiar",
+    "db:vaciar": "pnpm --filter @docvance/db limpiar -- --catalogo --destinatarios"
   },
   "devDependencies": {
     "@types/node": "^22.7.5",
