@@ -1,5 +1,6 @@
 export const TIPOS_EVENTO = [
   'documento.recibido',
+  'documento.dividido',
   'documento.clasificado',
   'documento.extraido',
   'documento.emparejado',

@@ -120,7 +120,8 @@ export async function ficha(inquilinoId: string, documentoId: string): Promise<F
 
   const { rows: valores } = corrida
     ? await conexion().query<Record<string, unknown>>(
-        `SELECT clave, valor_leido, valor_normalizado, confianza, pagina, recorte, texto_fuente
+        `SELECT clave, valor_leido, valor_normalizado, confianza, pagina, recorte, texto_fuente,
+                presencia
            FROM valor_extraido WHERE corrida_id = $1 ORDER BY clave`,
         [corrida['id']],
       )

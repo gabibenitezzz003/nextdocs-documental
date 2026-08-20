@@ -1,6 +1,12 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
 import { AlmacenamientoEnMemoria } from './almacenamiento.js';
+import {
+  contarPaginas,
+  extraerPaginas,
+  normalizarSegmentos,
+  segmentosPorPagina,
+} from './paginado.js';
 import { almacenamientoDeEntorno, motorDeEntorno } from './fabricas.js';
 import { MotorGemini } from './motorGemini.js';
 import { MotorSimulado } from './motorSimulado.js';
@@ -104,5 +110,70 @@ describe('motor simulado', () => {
     await expect(
       new MotorSimulado().extraer({ contenido, tipoMime: 'application/pdf', plantilla: REMITO }),
     ).rejects.toThrow(/no responde/);
+  });
+});
+
+describe('paginado de pdf', () => {
+  const armarPdf = async (paginas: number) => {
+    const { PDFDocument } = await import('pdf-lib');
+    const documento = await PDFDocument.create();
+    for (let i = 0; i < paginas; i += 1) documento.addPage([595, 842]);
+    return Buffer.from(await documento.save());
+  };
+
+  it('cuenta las paginas de verdad', async () => {
+    expect(await contarPaginas(await armarPdf(10))).toBe(10);
+    expect(await contarPaginas(await armarPdf(1))).toBe(1);
+  });
+
+  it('avisa si el pdf no se puede abrir', async () => {
+    await expect(contarPaginas(Buffer.from('no soy un pdf'))).rejects.toMatchObject({
+      name: 'ErrorPaginado',
+      codigo: 'PDF_ILEGIBLE',
+    });
+  });
+
+  it('extrae un rango de paginas como pdf nuevo', async () => {
+    const original = await armarPdf(10);
+    const recorte = await extraerPaginas(original, 3, 5);
+    expect(await contarPaginas(recorte)).toBe(3);
+  });
+
+  it('no se sale del rango del documento', async () => {
+    const original = await armarPdf(4);
+    expect(await contarPaginas(await extraerPaginas(original, 3, 99))).toBe(2);
+    expect(await contarPaginas(await extraerPaginas(original, 0, 1))).toBe(1);
+  });
+
+  it('un segmento por pagina cuando no hay quien decida', () => {
+    expect(segmentosPorPagina(3)).toEqual([
+      { desde: 1, hasta: 1, tipo: null },
+      { desde: 2, hasta: 2, tipo: null },
+      { desde: 3, hasta: 3, tipo: null },
+    ]);
+  });
+
+  it('acepta segmentos que cubren todo sin pisarse', () => {
+    const salida = normalizarSegmentos(
+      [{ desde: 1, hasta: 2, tipo: 'factura' }, { desde: 3, hasta: 3, tipo: 'remito' }],
+      3,
+    );
+    expect(salida).toEqual([
+      { desde: 1, hasta: 2, tipo: 'FACTURA' },
+      { desde: 3, hasta: 3, tipo: 'REMITO' },
+    ]);
+  });
+
+  it('descarta la segmentacion si deja paginas afuera', () => {
+    expect(normalizarSegmentos([{ desde: 1, hasta: 1 }], 5)).toEqual([]);
+  });
+
+  it('descarta la segmentacion si los rangos se pisan', () => {
+    expect(normalizarSegmentos([{ desde: 1, hasta: 3 }, { desde: 2, hasta: 4 }], 4)).toEqual([]);
+  });
+
+  it('descarta rangos imposibles', () => {
+    expect(normalizarSegmentos([{ desde: 4, hasta: 2 }], 4)).toEqual([]);
+    expect(normalizarSegmentos('no es una lista', 4)).toEqual([]);
   });
 });

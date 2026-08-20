@@ -27,8 +27,8 @@ export function cola(nombre: string): Queue {
     existente = new Queue(nombre, {
       connection: redis(),
       defaultJobOptions: {
-        attempts: 6,
-        backoff: { type: 'exponential', delay: 5_000 },
+        attempts: 8,
+        backoff: { type: 'exponential', delay: 15_000 },
         removeOnComplete: { count: 500 },
         removeOnFail: { count: 2000 },
       },
@@ -38,12 +38,22 @@ export function cola(nombre: string): Queue {
   return existente;
 }
 
+export interface RitmoCola {
+  maximo: number;
+  ventanaMs: number;
+}
+
 export function trabajador<T>(
   nombre: string,
   proceso: Processor<T>,
   concurrencia = 4,
+  ritmo?: RitmoCola,
 ): Worker<T> {
-  return new Worker<T>(nombre, proceso, { connection: redis(), concurrency: concurrencia });
+  return new Worker<T>(nombre, proceso, {
+    connection: redis(),
+    concurrency: concurrencia,
+    ...(ritmo ? { limiter: { max: ritmo.maximo, duration: ritmo.ventanaMs } } : {}),
+  });
 }
 
 export async function encolar(

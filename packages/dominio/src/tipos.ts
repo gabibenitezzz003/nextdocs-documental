@@ -18,7 +18,8 @@ export type EstadoDocumento =
   | 'OBSERVADO'
   | 'APROBADO'
   | 'RECHAZADO'
-  | 'CERRADO';
+  | 'CERRADO'
+  | 'DIVIDIDO';
 
 export type EstadoFisico =
   | 'NO_REQUERIDO'
@@ -83,6 +84,8 @@ export interface Evidencia {
   textoFuente: string | null;
 }
 
+export type PresenciaCampo = 'PRESENTE' | 'NO_FIGURA' | 'ILEGIBLE';
+
 export interface ValorExtraido {
   valorLeido: unknown;
   valorNormalizado: unknown;
@@ -90,6 +93,7 @@ export interface ValorExtraido {
   evidencia: Evidencia | null;
   critico: boolean;
   requerido: boolean;
+  presencia: PresenciaCampo;
 }
 
 export type MapaValores = Record<string, ValorExtraido>;

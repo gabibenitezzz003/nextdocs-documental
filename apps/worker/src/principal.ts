@@ -5,7 +5,9 @@ import { cerrar } from '@docvance/db';
 import { procesar, type TrabajoProcesamiento } from './procesador.js';
 import { publicarPendientes } from './publicador.js';
 
-const CONCURRENCIA = Number(process.env['WORKER_CONCURRENCIA'] ?? 4);
+const CONCURRENCIA = Number(process.env['WORKER_CONCURRENCIA'] ?? 2);
+const RITMO_MAXIMO = Number(process.env['WORKER_RITMO_MAXIMO'] ?? 6);
+const RITMO_VENTANA_MS = Number(process.env['WORKER_RITMO_VENTANA_MS'] ?? 60_000);
 const CADENCIA_PUBLICACION_MS = Number(process.env['WORKER_CADENCIA_MS'] ?? 3_000);
 
 function registrar(mensaje: string, datos?: Record<string, unknown>): void {
@@ -26,6 +28,7 @@ const consumidor = trabajador<TrabajoProcesamiento>(
     return resultado;
   },
   CONCURRENCIA,
+  { maximo: RITMO_MAXIMO, ventanaMs: RITMO_VENTANA_MS },
 );
 
 consumidor.on('failed', (trabajo, error) => {
@@ -73,5 +76,6 @@ for (const senal of ['SIGINT', 'SIGTERM'] as const) {
 registrar('worker arriba', {
   cola: NOMBRE_COLA_PROCESAMIENTO,
   concurrencia: CONCURRENCIA,
+  ritmo: `${RITMO_MAXIMO} cada ${RITMO_VENTANA_MS / 1000}s`,
   cadenciaMs: CADENCIA_PUBLICACION_MS,
 });

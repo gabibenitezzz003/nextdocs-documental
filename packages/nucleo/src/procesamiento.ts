@@ -22,6 +22,7 @@ import {
 import { SISTEMA, auditar, encolarEvento } from './auditoria.js';
 import { verificarContraArca } from './fiscal.js';
 import { segundaPasada } from './reintento.js';
+import { dividirSiHaceFalta } from './segmentacion.js';
 import {
   EMISOR_GENERICO,
   aplicarCorrecciones,
@@ -36,6 +37,7 @@ export interface DependenciasProcesamiento {
   almacenamiento: Almacenamiento;
   motor: MotorDocumental;
   buscarObjetos: (inquilinoId: string, valores: Record<string, unknown>) => Promise<ObjetoNegocio[]>;
+  encolar?: (nombre: string, clave: string, datos: Record<string, unknown>) => Promise<void>;
 }
 
 interface FilaDocumento {
@@ -46,6 +48,7 @@ interface FilaDocumento {
   nombre_archivo: string;
   plantilla_codigo: string | null;
   clave_almacen: string;
+  documento_padre_id: string | null;
 }
 
 export interface OpcionesProcesamiento {
@@ -184,7 +187,7 @@ export async function procesarDocumento(
 
   const { rows } = await conexion().query<FilaDocumento>(
     `SELECT d.id, d.inquilino_id, d.estado, d.tipo_mime, d.nombre_archivo, d.plantilla_codigo,
-            a.clave_almacen
+            d.documento_padre_id, a.clave_almacen
      FROM documento d
      JOIN archivo_documento a ON a.documento_id = d.id AND a.version = 1
      WHERE d.id = $1`,
@@ -193,6 +196,15 @@ export async function procesarDocumento(
 
   const documento = rows[0];
   if (!documento) throw new Error(`No existe el documento ${documentoId}.`);
+
+  if (documento.estado === 'OBSERVADO') {
+    await conexion().query(
+      `UPDATE excepcion SET estado = 'DESCARTADA', resolucion = 'Reintento del documento.',
+              resuelto_en = now()
+        WHERE documento_id = $1 AND estado = 'ABIERTA'`,
+      [documento.id],
+    );
+  }
 
   await enTransaccion(async (cliente) => {
     if (documento.estado === 'PROCESANDO') {
@@ -212,6 +224,34 @@ export async function procesarDocumento(
   });
 
   const contenido = await dependencias.almacenamiento.leer(documento.clave_almacen);
+  const posibles = await tiposDisponibles(documento.inquilino_id);
+
+  if (dependencias.encolar) {
+    const division = await dividirSiHaceFalta(
+      documento,
+      contenido,
+      correlacionId,
+      {
+        almacenamiento: dependencias.almacenamiento,
+        motor: dependencias.motor,
+        encolar: dependencias.encolar,
+      },
+      posibles,
+    );
+
+    if (division.dividido) {
+      documento.estado = 'DIVIDIDO';
+      return {
+        documentoId: documento.id,
+        estado: 'DIVIDIDO',
+        confianza: null,
+        excepcionId: null,
+        instantaneaId: null,
+        motivo: `Se dividio en ${division.hijos.length} documentos.`,
+      };
+    }
+  }
+
   const iniciadoEn = new Date();
 
   let clasificacion;
@@ -220,7 +260,7 @@ export async function procesarDocumento(
       contenido,
       tipoMime: documento.tipo_mime,
       nombreArchivo: documento.nombre_archivo,
-      plantillasPosibles: await tiposDisponibles(documento.inquilino_id),
+      plantillasPosibles: posibles,
     });
   } catch (error) {
     const e = error as ErrorMotorDocumental;
@@ -351,8 +391,8 @@ export async function procesarDocumento(
       await cliente.query(
         `INSERT INTO valor_extraido
            (inquilino_id, corrida_id, clave, valor_leido, valor_normalizado, confianza,
-            pagina, recorte, texto_fuente)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
+            pagina, recorte, texto_fuente, presencia)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`,
         [
           documento.inquilino_id, corridaId, clave,
           JSON.stringify(valor.valorLeido ?? null),
@@ -361,6 +401,7 @@ export async function procesarDocumento(
           valor.evidencia?.pagina ?? null,
           valor.evidencia?.recorte ? JSON.stringify(valor.evidencia.recorte) : null,
           valor.evidencia?.textoFuente ?? null,
+          valor.presencia,
         ],
       );
     }

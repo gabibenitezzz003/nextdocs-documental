@@ -8,3 +8,4 @@ export * from './fiscal.js';
 export * from './aprendizaje.js';
 export * from './reintento.js';
 export * from './catalogoFollow.js';
+export * from './segmentacion.js';

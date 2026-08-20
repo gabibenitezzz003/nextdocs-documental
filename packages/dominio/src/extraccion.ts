@@ -5,6 +5,7 @@ import type {
   Hallazgo,
   MapaValores,
   Plantilla,
+  PresenciaCampo,
   Severidad,
   ValorExtraido,
 } from './tipos.js';
@@ -80,6 +81,12 @@ export interface ResultadoProcesado {
   observados: CampoObservado[];
 }
 
+export function presenciaDe(vinoAlgo: boolean, valorNormalizado: unknown): PresenciaCampo {
+  if (!vinoAlgo) return 'NO_FIGURA';
+  if (valorNormalizado === null || valorNormalizado === undefined) return 'ILEGIBLE';
+  return 'PRESENTE';
+}
+
 export function procesarCampos(
   plantilla: Plantilla,
   camposBrutos: Record<string, unknown>,
@@ -133,6 +140,7 @@ export function procesarCampos(
       evidencia,
       critico: campo.critico,
       requerido: campo.requerido,
+      presencia: presenciaDe(vinoAlgo, valorNormalizado),
     } satisfies ValorExtraido;
   }
 

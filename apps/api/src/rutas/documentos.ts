@@ -24,6 +24,8 @@ import { ErrorApi, noEncontrado } from '../problemas.js';
 
 const esquemaId = z.object({ id: z.string().uuid() });
 
+const ESTADOS_REPROCESABLES = ['RECIBIDO', 'OBSERVADO'];
+
 function traducir(error: unknown): never {
   if (error instanceof DocumentoInexistente) throw noEncontrado(error.message);
   if (error instanceof TransicionInvalida) throw new ErrorApi('TRANSICION_INVALIDA', error.message);
@@ -151,8 +153,11 @@ export async function rutasDeDocumentos(servidor: FastifyInstance): Promise<void
     if (!encontrada) throw noEncontrado(`No existe el documento ${id}.`);
 
     const estado = String(encontrada.documento['estado']);
-    if (estado !== 'RECIBIDO') {
-      throw new ErrorApi('TRANSICION_INVALIDA', `Solo se reprocesa desde RECIBIDO y esta en ${estado}.`);
+    if (!ESTADOS_REPROCESABLES.includes(estado)) {
+      throw new ErrorApi(
+        'TRANSICION_INVALIDA',
+        `Un documento en ${estado} no se puede reprocesar. Solo ${ESTADOS_REPROCESABLES.join(' o ')}.`,
+      );
     }
 
     await dependencias().encolar(NOMBRE_COLA_PROCESAMIENTO, `${id}-${Date.now()}`, {

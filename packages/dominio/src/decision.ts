@@ -11,13 +11,14 @@ import type {
 
 export const TRANSICIONES: Record<EstadoDocumento, EstadoDocumento[]> = {
   RECIBIDO: ['PROCESANDO', 'RECHAZADO'],
-  PROCESANDO: ['EXTRAIDO', 'OBSERVADO', 'RECHAZADO'],
+  PROCESANDO: ['EXTRAIDO', 'OBSERVADO', 'RECHAZADO', 'DIVIDIDO'],
   EXTRAIDO: ['VALIDADO', 'OBSERVADO'],
   VALIDADO: ['APROBADO', 'OBSERVADO', 'RECHAZADO'],
-  OBSERVADO: ['VALIDADO', 'APROBADO', 'RECHAZADO'],
+  OBSERVADO: ['PROCESANDO', 'VALIDADO', 'APROBADO', 'RECHAZADO'],
   APROBADO: ['CERRADO'],
   RECHAZADO: [],
   CERRADO: [],
+  DIVIDIDO: [],
 };
 
 export function transicionValida(desde: EstadoDocumento | null, hasta: EstadoDocumento): boolean {

@@ -1,16 +1,20 @@
 import type {
   EntradaClasificacion,
   EntradaExtraccion,
+  EntradaSegmentacion,
   MotorDocumental,
   SalidaClasificacion,
   SalidaExtraccion,
+  SalidaSegmentacion,
 } from './inteligencia.js';
 import {
   ErrorMotorDocumental,
   leerJson,
   promptDeClasificacion,
   promptDeExtraccion,
+  promptDeSegmentacion,
 } from './inteligencia.js';
+import { normalizarSegmentos } from './paginado.js';
 
 const RAIZ = 'https://generativelanguage.googleapis.com/v1beta/models';
 
@@ -102,6 +106,18 @@ export class MotorGemini implements MotorDocumental {
       confianza: Number.isFinite(confianza) ? Math.max(0, Math.min(1, confianza)) : 0,
       motivo: leido['motivo'] ? String(leido['motivo']).slice(0, 300) : null,
     };
+  }
+
+  async segmentar(entrada: EntradaSegmentacion): Promise<SalidaSegmentacion> {
+    const instruccion = promptDeSegmentacion(entrada.plantillasPosibles, entrada.totalPaginas);
+    const { texto } = await this.invocar(instruccion, entrada.contenido, entrada.tipoMime);
+    const leido = leerJson(texto);
+
+    if (!leido) {
+      throw new ErrorMotorDocumental('SALIDA_NO_PARSEABLE', 'La segmentacion no vino como JSON.');
+    }
+
+    return { segmentos: normalizarSegmentos(leido['segmentos'], entrada.totalPaginas) };
   }
 
   async extraer(entrada: EntradaExtraccion): Promise<SalidaExtraccion> {

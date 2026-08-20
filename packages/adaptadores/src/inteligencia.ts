@@ -27,9 +27,21 @@ export interface SalidaExtraccion {
   uso: { proveedor: string; modelo: string; entradas?: number; salidas?: number };
 }
 
+export interface EntradaSegmentacion {
+  contenido: Buffer;
+  tipoMime: string;
+  totalPaginas: number;
+  plantillasPosibles: string[];
+}
+
+export interface SalidaSegmentacion {
+  segmentos: { desde: number; hasta: number; tipo: string | null }[];
+}
+
 export interface MotorDocumental {
   clasificar(entrada: EntradaClasificacion): Promise<SalidaClasificacion>;
   extraer(entrada: EntradaExtraccion): Promise<SalidaExtraccion>;
+  segmentar?(entrada: EntradaSegmentacion): Promise<SalidaSegmentacion>;
 }
 
 export const ADVERTENCIA_INYECCION = [
@@ -126,6 +138,30 @@ export function promptDeClasificacion(posibles: string[], nombreArchivo: string)
     'Devolve unicamente este JSON:',
     JSON.stringify({ tipo: 'CODIGO', confianza: 0.0, motivo: 'por que elegiste ese tipo' }, null, 2),
   ].join('\n');
+}
+
+export function promptDeSegmentacion(posibles: string[], totalPaginas: number): string {
+  return [
+    'Sos un clasificador que separa lotes de documentos escaneados.',
+    '',
+    ADVERTENCIA_INYECCION,
+    '',
+    `El archivo tiene ${totalPaginas} paginas.`,
+    'Decidi donde empieza y termina cada documento independiente.',
+    '',
+    'TIPOS POSIBLES:',
+    ...posibles.map((p) => `- ${p}`),
+    '- DESCONOCIDO: si no encaja con ninguno',
+    '',
+    'REGLAS:',
+    '1. Los rangos no se pisan y cubren todas las paginas, de la 1 a la ultima.',
+    '2. Un documento de varias hojas es un solo segmento, no uno por hoja.',
+    '3. Si cada hoja es un documento distinto, devolve un segmento por hoja.',
+    '4. Las paginas se numeran desde 1.',
+    '',
+    'Devolve unicamente este JSON:',
+    JSON.stringify({ segmentos: [{ desde: 1, hasta: 1, tipo: 'CODIGO' }] }, null, 2),
+  ].join(SALTO);
 }
 
 export function leerJson(crudo: unknown): Record<string, unknown> | null {

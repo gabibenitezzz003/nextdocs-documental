@@ -2,6 +2,7 @@ import type { Job } from 'bullmq';
 
 import {
   almacenamientoDeEntorno,
+  encolar,
   motorDeEntorno,
   type Almacenamiento,
   type MotorDocumental,
@@ -9,6 +10,7 @@ import {
 import {
   buscarObjetosCombinado,
   procesarDocumento,
+  type DependenciasProcesamiento,
   type ResultadoProcesamiento,
 } from '@docvance/nucleo';
 
@@ -22,10 +24,10 @@ export interface TrabajoProcesamiento {
 let almacenamiento: Almacenamiento | null = null;
 let motor: MotorDocumental | null = null;
 
-function dependencias(): { almacenamiento: Almacenamiento; motor: MotorDocumental; buscarObjetos: typeof buscarObjetosCombinado } {
+function dependencias(): DependenciasProcesamiento {
   if (!almacenamiento) almacenamiento = almacenamientoDeEntorno();
   if (!motor) motor = motorDeEntorno();
-  return { almacenamiento, motor, buscarObjetos: buscarObjetosCombinado };
+  return { almacenamiento, motor, buscarObjetos: buscarObjetosCombinado, encolar };
 }
 
 export async function procesar(trabajo: Job<TrabajoProcesamiento>): Promise<ResultadoProcesamiento> {
