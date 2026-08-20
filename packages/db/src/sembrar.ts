@@ -84,6 +84,12 @@ const USUARIOS = [
 ];
 
 export async function sembrar(): Promise<void> {
+  if (process.env['NODE_ENV'] === 'production') {
+    throw new Error(
+      'El sembrado crea usuarios y una clave de api conocida. No corre en produccion.',
+    );
+  }
+
   await enTransaccion(async (cliente) => {
     await cliente.query(
       `INSERT INTO inquilino (id, nombre, plan)

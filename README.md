@@ -22,8 +22,9 @@ pnpm build
 pnpm dev
 ```
 
-El sembrado deja una clave de API de demostracion y la imprime en pantalla. Con esa
-clave ya podes cargar documentos:
+El sembrado deja una clave de API de demostracion y la imprime en pantalla. Es
+una clave conocida y esta en el codigo a proposito, asi que el sembrado se niega
+a correr con `NODE_ENV=production`. Con esa clave ya podes cargar documentos:
 
 ```bash
 curl http://localhost:4000/api/v1/documentos   -H "Authorization: Bearer <la clave que imprimio el sembrado>"
