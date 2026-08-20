@@ -248,9 +248,10 @@ export async function colaDeExcepciones(
 
 export async function plantillasPublicadas(inquilinoId: string): Promise<Record<string, unknown>[]> {
   const { rows } = await conexion().query<Record<string, unknown>>(
-    `SELECT codigo, nombre, version, estado, umbral_auto_aprobacion, politica_fisica, definicion
+    `SELECT codigo, nombre, version, estado, umbral_auto_aprobacion, politica_fisica, definicion,
+            publicado_en
        FROM plantilla_documental
-      WHERE inquilino_id = $1 AND estado = 'PUBLICADA'
+      WHERE inquilino_id = $1 AND estado <> 'BORRADOR'
       ORDER BY codigo`,
     [inquilinoId],
   );

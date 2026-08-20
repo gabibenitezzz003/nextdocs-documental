@@ -110,10 +110,44 @@ Estas se sostienen aunque cambien proveedores, pantallas o clientes:
 - Las integraciones son idempotentes.
 - Los fallos son recuperables.
 
+## Tipos de documento
+
+Once plantillas base, agrupadas por familia. Cada una declara sus campos, cuáles
+son críticos, contra qué objeto de negocio empareja y qué reglas la validan.
+
+| Familia | Plantillas |
+|---|---|
+| Fiscal | factura, nota de crédito, nota de débito, constancia de inscripción |
+| Logístico | remito |
+| Identidad | DNI, licencia de conducir |
+| Vehicular | VTV, RTO, cédula del vehículo, póliza de seguro |
+
+Las que declaran un campo de vencimiento avisan cuando el documento venció o
+está por vencer. Los umbrales y la criticidad de cada campo se ajustan desde la
+interfaz, sin tocar código.
+
+## Constatación fiscal
+
+Las facturas se verifican contra ARCA por el web service WSCDC, con
+autenticación WSAA y firma CMS del ticket. Si ARCA rechaza el comprobante es
+crítico, si lo observa es error, y si no se pudo consultar queda como
+advertencia: nunca se aprueba fingiendo que se verificó.
+
+Necesita un certificado digital de ARCA delegado al servicio `wscdc`. Sin él,
+todo lo demás funciona igual.
+
+## Aprender de las correcciones
+
+Cada corrección humana se guarda por plantilla y por emisor. A partir de la
+segunda vez que aparece el mismo error se corrige solo, queda anotado en los
+hallazgos, y las correcciones frecuentes se le pasan al modelo como contexto.
+
+Si el documento dice otra cosa, gana el documento.
+
 ## Estado
 
-Fase 0 (fundación) e inicio de Fase 1. Ver `docs/arquitectura/estado.md` para el
-detalle de qué está construido y qué falta.
+El núcleo, la API, el worker y la interfaz están construidos y probados. Ver
+`docs/arquitectura/estado.md` para el detalle.
 
 ## Comandos
 

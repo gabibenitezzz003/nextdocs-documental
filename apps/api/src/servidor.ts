@@ -10,6 +10,7 @@ import { rutasDeDistribucion } from './rutas/distribucion.js';
 import { rutasDeDocumentos } from './rutas/documentos.js';
 import { rutasDeOpenapi } from './rutas/openapi.js';
 import { rutasDeOperacion } from './rutas/operacion.js';
+import { rutasDePlantillas } from './rutas/plantillas.js';
 import { rutasDeSalud } from './rutas/salud.js';
 import './tipos.js';
 
@@ -49,6 +50,7 @@ export async function armarServidor(): Promise<FastifyInstance> {
   await servidor.register(rutasDeDocumentos);
   await servidor.register(rutasDeOperacion);
   await servidor.register(rutasDeDistribucion);
+  await servidor.register(rutasDePlantillas);
 
   return servidor;
 }
