@@ -87,6 +87,15 @@ export async function rutasDeOperacion(servidor: FastifyInstance): Promise<void>
     };
   });
 
+  servidor.post('/api/v1/simulador/whatsapp', async (pedido) => {
+    const cuerpo = (pedido.body ?? {}) as Record<string, unknown>;
+    pedido.log.info(
+      { telefono: cuerpo['telefono'] ?? null, mensaje: cuerpo['mensaje'] ?? null },
+      'el simulador de whatsapp recibio un mensaje',
+    );
+    return { enviado: true, simulado: true, telefono: cuerpo['telefono'] ?? null };
+  });
+
   servidor.post('/api/v1/simulador/erp', async (pedido) => {
     pedido.log.info(
       {

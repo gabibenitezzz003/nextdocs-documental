@@ -12,6 +12,9 @@ export interface FilaBandeja {
   sujeto_id: string | null;
   creado_en: Date;
   actualizado_en: Date;
+  familia: string | null;
+  vence_en: string | null;
+  documento_padre_id: string | null;
   excepciones_abiertas: string;
 }
 
@@ -51,6 +54,7 @@ export async function bandeja(inquilinoId: string, filtro: FiltroBandeja): Promi
   const { rows } = await conexion().query<FilaBandeja>(
     `SELECT d.id, d.estado, d.origen, d.plantilla_codigo, d.nombre_archivo, d.referencia_externa,
             d.confianza, d.sujeto_tipo, d.sujeto_id, d.creado_en, d.actualizado_en,
+            d.familia, d.vence_en, d.documento_padre_id,
             (SELECT count(*) FROM excepcion e
               WHERE e.documento_id = d.id AND e.estado = 'ABIERTA') AS excepciones_abiertas
        FROM documento d
@@ -97,6 +101,7 @@ export async function ficha(inquilinoId: string, documentoId: string): Promise<F
   const { rows: documentos } = await conexion().query<Record<string, unknown>>(
     `SELECT id, inquilino_id, origen, referencia_externa, huella, tipo_mime, nombre_archivo,
             estado, plantilla_codigo, sujeto_tipo, sujeto_id, confianza, version,
+            familia, vence_en, documento_padre_id, pagina_desde, pagina_hasta,
             creado_en, actualizado_en
        FROM documento WHERE id = $1 AND inquilino_id = $2`,
     [documentoId, inquilinoId],

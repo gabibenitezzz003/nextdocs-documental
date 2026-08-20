@@ -42,6 +42,7 @@ const RUTAS_ABIERTAS = new Set([
   '/openapi.json',
   '/documentacion',
   '/api/v1/simulador/erp',
+  '/api/v1/simulador/whatsapp',
 ]);
 
 function credencialDe(pedido: FastifyRequest): string | null {

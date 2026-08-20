@@ -8,6 +8,17 @@ const INQUILINO_DEMO = '11111111-1111-1111-1111-111111111111';
 
 export const CLAVE_API_DEMO = 'dvk_demo_4f2a9c7b1e6d8035a1c4b9e2f7d60831';
 
+const VIGENCIAS_DEMO = [
+  { plantilla: 'VTV', familia: 'VEHICULAR', archivo: 'vtv-AB123CD.pdf', dias: -45, sujeto: 'AB123CD' },
+  { plantilla: 'VTV', familia: 'VEHICULAR', archivo: 'vtv-MJK889.pdf', dias: 12, sujeto: 'MJK889' },
+  { plantilla: 'SEGURO_VEHICULAR', familia: 'VEHICULAR', archivo: 'poliza-AB123CD.pdf', dias: -8, sujeto: 'AB123CD' },
+  { plantilla: 'SEGURO_VEHICULAR', familia: 'VEHICULAR', archivo: 'poliza-MJK889.pdf', dias: 96, sujeto: 'MJK889' },
+  { plantilla: 'LICENCIA_CONDUCIR', familia: 'IDENTIDAD', archivo: 'licencia-ferreyra.pdf', dias: 21, sujeto: '23957446' },
+  { plantilla: 'LICENCIA_CONDUCIR', familia: 'IDENTIDAD', archivo: 'licencia-cabrera.pdf', dias: 240, sujeto: '29557946' },
+  { plantilla: 'CEDULA_VEHICULAR', familia: 'VEHICULAR', archivo: 'cedula-AB123CD.pdf', dias: 410, sujeto: 'AB123CD' },
+  { plantilla: 'DNI', familia: 'IDENTIDAD', archivo: 'dni-prado.jpg', dias: -120, sujeto: '20369335201' },
+];
+
 const OBJETOS = [
   {
     tipo: 'PEDIDO',
@@ -135,10 +146,34 @@ export async function sembrar(): Promise<void> {
       ],
     );
 
+    for (const vigencia of VIGENCIAS_DEMO) {
+      await cliente.query(
+        `INSERT INTO documento
+           (inquilino_id, origen, huella, tipo_mime, nombre_archivo, estado, plantilla_codigo,
+            familia, vence_en, confianza, sujeto_tipo, sujeto_id)
+         SELECT $1, 'DEMOSTRACION', $2, $3, $4, 'APROBADO', $5, $6,
+                CURRENT_DATE + ($7)::integer, 0.96, $8, $9
+          WHERE NOT EXISTS (
+            SELECT 1 FROM documento WHERE inquilino_id = $1 AND huella = $2
+          )`,
+        [
+          INQUILINO_DEMO,
+          createHash('sha256').update(`demo:${vigencia.archivo}`).digest('hex'),
+          vigencia.archivo.endsWith('.jpg') ? 'image/jpeg' : 'application/pdf',
+          vigencia.archivo,
+          vigencia.plantilla,
+          vigencia.familia,
+          vigencia.dias,
+          vigencia.familia === 'IDENTIDAD' ? 'CHOFER' : 'VEHICULO',
+          vigencia.sujeto,
+        ],
+      );
+    }
+
     await cliente.query(
       `INSERT INTO suscripcion_webhook (inquilino_id, url, secreto, tipos_evento)
        VALUES ($1, $2, $3, $4)
-       ON CONFLICT DO NOTHING`,
+       ON CONFLICT (inquilino_id, url) DO UPDATE SET tipos_evento = EXCLUDED.tipos_evento`,
       [
         INQUILINO_DEMO,
         'http://localhost:4000/api/v1/simulador/erp',
