@@ -35,14 +35,24 @@ Ademas de la clave hay credenciales de usuario para probar los roles:
 
 | Servicio | Puerto | Para qué |
 |---|---|---|
-| API | 4000 | REST y OpenAPI |
-| Web | 4001 | interfaz |
+| API | 4000 | REST, OpenAPI en `/documentacion` |
 | PostgreSQL | 5433 | estado y auditoría |
 | Redis | 6380 | colas y cache |
 | MinIO | 9100 | originales |
 | MinIO consola | 9101 | usuario docvance, clave docvance123 |
 
 Los puertos están corridos a propósito para no chocar con otros proyectos.
+
+La interfaz **no vive acá**: es el módulo **IA-Docs** dentro de Follow, en
+`follow-front`, rama `feature/ia-docs-modulo`. Se conecta a esta API con
+`VITE_IA_DOCS_URL` y `VITE_IA_DOCS_CLAVE`.
+
+Servicios de apoyo, cada uno con su compose en `follow-docker`:
+
+| Servicio | Puerto | Para qué |
+|---|---|---|
+| n8n | 5678 | flujos B49, conversación con el chofer |
+| Buzón de correo | 8025 | ver los correos que salen, sin mandarlos de verdad |
 
 Para bajar todo:
 
@@ -60,16 +70,19 @@ pnpm infra:limpiar
 
 ```
 apps/
-  api/         REST, autenticación, contexto de inquilino
-  worker/      procesamiento asíncrono del pipeline
-  web/         interfaz
+  api/          REST, autenticación, contexto de inquilino
+  worker/       procesamiento asíncrono, publicación y correos
 packages/
-  dominio/     reglas de negocio puras, sin framework
-  contratos/   tipos y esquemas compartidos
-  db/          esquema, migraciones y acceso a datos
-infra/docker/  entorno local
-docs/          arquitectura y decisiones
+  dominio/      reglas puras: plantillas, validación, emparejamiento, decisión
+  contratos/    tipos, esquemas y seguridad de archivos
+  db/           esquema, migraciones y acceso a datos
+  adaptadores/  IA, almacenamiento, colas, ARCA, correo, Follow
+  nucleo/       el pipeline: recepción, procesamiento, revisión, entrega
+infra/docker/   entorno local
+docs/           arquitectura y decisiones
 ```
+
+`apps/web` no existe: la interfaz es IA-Docs dentro de Follow.
 
 Las dependencias apuntan hacia el dominio, nunca al revés. `packages/dominio` no
 importa Fastify, Postgres ni ningún proveedor de IA: son reglas puras con tests
@@ -77,6 +90,10 @@ que corren en milisegundos.
 
 La API no habla con el proveedor de IA. Recibe, guarda el original y encola. El
 único proceso que llama al modelo es el worker.
+
+`packages/adaptadores` es la única capa que conoce proveedores externos: Gemini,
+MinIO, Redis, ARCA, SMTP y la API de Follow. Cambiar cualquiera de ellos no toca
+el dominio ni el pipeline.
 
 ## Proveedor de IA
 

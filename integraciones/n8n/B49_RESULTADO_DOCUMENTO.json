@@ -1,0 +1,368 @@
+{
+  "id": "b49docresult0001",
+  "name": "B49_RESULTADO_DOCUMENTO",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "b49-resultado-documento",
+        "responseMode": "lastNode",
+        "options": {}
+      },
+      "name": "IA-Docs avisa",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        -680,
+        300
+      ],
+      "id": "ia-docs-avisa",
+      "webhookId": "b49-resultado-documento-webhook"
+    },
+    {
+      "parameters": {
+        "jsCode": "const TIPOS_ACEPTADOS = {\n  'application/pdf': 'pdf',\n  'image/jpeg': 'jpg',\n  'image/jpg': 'jpg',\n  'image/png': 'png',\n  'image/webp': 'webp',\n  'image/tiff': 'tiff',\n};\n\nconst TAMANO_MAXIMO = 25 * 1024 * 1024;\n\nconst MOTIVOS_DEL_CHOFER = [\n  'CONFIANZA_GLOBAL_BAJA',\n  'CAMPOS_CRITICOS_OBSERVADOS',\n  'TIPO_NO_RECONOCIDO',\n  'TIPO_INCIERTO',\n  'SALIDA_NO_PARSEABLE',\n  'ARCHIVO_RECHAZADO',\n];\n\nconst MOTIVOS_DEL_OPERADOR = [\n  'REGLAS_CON_ERROR',\n  'EMPAREJAMIENTO_NO_RESUELTO',\n  'CAE_RECHAZADO',\n  'CAE_OBSERVADO',\n  'PLANTILLA_NO_PUBLICADA',\n];\n\nconst MOTIVOS_TRANSITORIOS = [\n  'PROVEEDOR_SATURADO',\n  'PROVEEDOR_NO_DISPONIBLE',\n  'PROVEEDOR_INALCANZABLE',\n  'PROVEEDOR_CON_ERROR',\n];\n\nfunction normalizarTelefono(valor) {\n  const solo = String(valor || '').replace(/\\D/g, '');\n  return solo.length >= 10 ? solo : null;\n}\n\nfunction extensionDe(tipoMime, nombre) {\n  const porMime = TIPOS_ACEPTADOS[String(tipoMime || '').toLowerCase()];\n  if (porMime) return porMime;\n  const porNombre = String(nombre || '').split('.').pop();\n  return Object.values(TIPOS_ACEPTADOS).includes(porNombre) ? porNombre : null;\n}\n\nfunction nombreDelArchivo(entrada) {\n  const propuesto = String(entrada.nombreArchivo || '').trim();\n  if (propuesto) return propuesto.replace(/[\\\\/:*?\"<>|]/g, '_').slice(0, 120);\n\n  const extension = extensionDe(entrada.tipoMime, propuesto) || 'pdf';\n  const marca = new Date().toISOString().slice(0, 19).replace(/[:T-]/g, '');\n  return `whatsapp_${entrada.telefono || 'chofer'}_${marca}.${extension}`;\n}\n\nfunction evaluarEntrada(entrada) {\n  const telefono = normalizarTelefono(entrada.telefono);\n  if (!telefono) {\n    return { aceptado: false, motivo: 'SIN_TELEFONO', mensaje: null };\n  }\n\n  if (!entrada.contenidoBase64 || String(entrada.contenidoBase64).length < 32) {\n    return {\n      aceptado: false,\n      motivo: 'SIN_CONTENIDO',\n      mensaje: 'No me llego el archivo. Probá mandarlo de nuevo.',\n    };\n  }\n\n  if (!extensionDe(entrada.tipoMime, entrada.nombreArchivo)) {\n    return {\n      aceptado: false,\n      motivo: 'TIPO_NO_ACEPTADO',\n      mensaje: 'Ese formato no lo puedo leer. Mandame una foto o un PDF.',\n    };\n  }\n\n  const tamano = Math.floor((String(entrada.contenidoBase64).length * 3) / 4);\n  if (tamano > TAMANO_MAXIMO) {\n    return {\n      aceptado: false,\n      motivo: 'DEMASIADO_GRANDE',\n      mensaje: 'El archivo pesa demasiado. Probá con una foto de menor calidad.',\n    };\n  }\n\n  return { aceptado: true, motivo: null, mensaje: null, telefono, tamano };\n}\n\nfunction prepararCarga(entrada) {\n  const evaluacion = evaluarEntrada(entrada);\n  if (!evaluacion.aceptado) return { ...evaluacion, carga: null };\n\n  return {\n    ...evaluacion,\n    carga: {\n      origen: 'WHATSAPP',\n      nombreArchivo: nombreDelArchivo({ ...entrada, telefono: evaluacion.telefono }),\n      tipoMime: String(entrada.tipoMime || '').toLowerCase() || undefined,\n      contenidoBase64: entrada.contenidoBase64,\n      referenciaExterna: entrada.referenciaExterna || null,\n      plantilla: entrada.plantillaSugerida || null,\n    },\n    claveIdempotencia: entrada.idMensaje ? `wsp:${entrada.idMensaje}` : null,\n  };\n}\n\nfunction acusarRecibo(resultado) {\n  if (resultado && resultado.motivo === 'DUPLICADO') {\n    return 'Ese documento ya lo tenia. No hace falta que lo mandes de nuevo.';\n  }\n  return 'Recibi el documento, lo estoy leyendo. En un rato te confirmo.';\n}\n\nfunction quienResuelve(codigoMotivo) {\n  const codigo = String(codigoMotivo || '').toUpperCase();\n  if (MOTIVOS_TRANSITORIOS.includes(codigo)) return 'NADIE';\n  if (MOTIVOS_DEL_CHOFER.includes(codigo)) return 'CHOFER';\n  if (MOTIVOS_DEL_OPERADOR.includes(codigo)) return 'OPERADOR';\n  return 'OPERADOR';\n}\n\nfunction mensajeParaElChofer(evento) {\n  const tipo = String(evento.tipoEvento || '');\n  const datos = evento.datos || {};\n  const nombre = evento.nombreArchivo ? ` (${evento.nombreArchivo})` : '';\n\n  if (tipo === 'documento.aprobado') {\n    const asociado = datos.sujetoId ? ` Quedo asociado al pedido ${datos.sujetoId}.` : '';\n    return {\n      escribir: true,\n      destino: 'CHOFER',\n      texto: `Listo, el documento${nombre} quedo cargado.${asociado} Gracias.`,\n    };\n  }\n\n  if (tipo !== 'documento.observado') {\n    return { escribir: false, destino: null, texto: null };\n  }\n\n  const responsable = quienResuelve(datos.codigoMotivo);\n\n  if (responsable === 'NADIE') {\n    return { escribir: false, destino: null, texto: null };\n  }\n\n  if (responsable === 'OPERADOR') {\n    return {\n      escribir: false,\n      destino: 'OPERADOR',\n      texto: null,\n      motivo: datos.codigoMotivo || null,\n    };\n  }\n\n  const textos = {\n    CONFIANZA_GLOBAL_BAJA: 'No llego a leer bien el documento. Probá sacarle la foto de nuevo, derecho y con buena luz.',\n    CAMPOS_CRITICOS_OBSERVADOS: 'Me falta leer algunos datos del documento. Mandame una foto donde se vea la hoja completa.',\n    TIPO_NO_RECONOCIDO: 'No pude reconocer que documento es. Confirmame que mandaste el remito o la factura correcta.',\n    TIPO_INCIERTO: 'No estoy seguro de que documento es. Mandame una foto mas clara del encabezado.',\n    SALIDA_NO_PARSEABLE: 'No pude interpretar el documento. Probá mandarlo de nuevo.',\n    ARCHIVO_RECHAZADO: 'Ese archivo no lo pude abrir. Mandame una foto o un PDF.',\n  };\n\n  const codigo = String(datos.codigoMotivo || '').toUpperCase();\n\n  return {\n    escribir: true,\n    destino: 'CHOFER',\n    texto: textos[codigo] || 'Necesito que me mandes el documento de nuevo, no lo pude procesar bien.',\n    motivo: codigo || null,\n  };\n}\n\nfunction puedeEscribirle(estado) {\n  const ahora = Number(estado.ahora || Date.now());\n\n  if (estado.botPausado) {\n    return { puede: false, motivo: 'BOT_PAUSADO' };\n  }\n\n  if (estado.preguntaPendienteDeOtroAgente) {\n    return { puede: false, motivo: 'OTRO_AGENTE_ESPERANDO' };\n  }\n\n  const minutosDesdeElUltimo = estado.ultimoAvisoEn\n    ? (ahora - Number(estado.ultimoAvisoEn)) / 60000\n    : Infinity;\n\n  if (minutosDesdeElUltimo < 10) {\n    return { puede: false, motivo: 'RECIEN_LE_ESCRIBIMOS' };\n  }\n\n  if (Number(estado.avisosDelDocumento || 0) >= 3) {\n    return { puede: false, motivo: 'YA_INSISTIMOS' };\n  }\n\n  return { puede: true, motivo: null };\n}\n\n\nconst cuerpo = $input.first().json.body || $input.first().json;\nconst datos = cuerpo.datos || {};\n\nconst decision = mensajeParaElChofer({\n  tipoEvento: cuerpo.tipoEvento,\n  nombreArchivo: datos.nombreArchivo || null,\n  datos,\n});\n\nreturn [{\n  json: {\n    ...decision,\n    documentoId: cuerpo.agregadoId || null,\n    correlacionId: cuerpo.correlacionId || null,\n    tipoEvento: cuerpo.tipoEvento || null,\n    telefono: datos.telefonoChofer || null,\n    codigoMotivo: datos.codigoMotivo || null,\n  },\n}];\n"
+      },
+      "name": "Decidir que contestar",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -460,
+        300
+      ],
+      "id": "decidir-que-contestar"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "hay-telefono",
+              "leftValue": "={{ Boolean($json.escribir && $json.telefono) }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        }
+      },
+      "name": "Hay algo que decir",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        -240,
+        300
+      ],
+      "id": "hay-algo-que-decir"
+    },
+    {
+      "parameters": {
+        "operation": "get",
+        "key": "=ai_paused:{{ $json.telefono }}",
+        "options": {}
+      },
+      "name": "Redis - Bot pausado",
+      "type": "n8n-nodes-base.redis",
+      "typeVersion": 1,
+      "position": [
+        -20,
+        200
+      ],
+      "id": "redis---bot-pausado",
+      "credentials": {
+        "redis": {
+          "id": "2sILiPAzeK1XjEwH",
+          "name": "Redis account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "get",
+        "key": "=pending_question:{{ $('Decidir que contestar').first().json.telefono }}",
+        "options": {}
+      },
+      "name": "Redis - Pregunta pendiente",
+      "type": "n8n-nodes-base.redis",
+      "typeVersion": 1,
+      "position": [
+        200,
+        200
+      ],
+      "id": "redis---pregunta-pendiente",
+      "credentials": {
+        "redis": {
+          "id": "2sILiPAzeK1XjEwH",
+          "name": "Redis account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "get",
+        "key": "=b49:documentos:v1:chofer:{{ $('Decidir que contestar').first().json.telefono }}",
+        "options": {}
+      },
+      "name": "Redis - Estado del documento",
+      "type": "n8n-nodes-base.redis",
+      "typeVersion": 1,
+      "position": [
+        420,
+        200
+      ],
+      "id": "redis---estado-del-documento",
+      "credentials": {
+        "redis": {
+          "id": "2sILiPAzeK1XjEwH",
+          "name": "Redis account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const TIPOS_ACEPTADOS = {\n  'application/pdf': 'pdf',\n  'image/jpeg': 'jpg',\n  'image/jpg': 'jpg',\n  'image/png': 'png',\n  'image/webp': 'webp',\n  'image/tiff': 'tiff',\n};\n\nconst TAMANO_MAXIMO = 25 * 1024 * 1024;\n\nconst MOTIVOS_DEL_CHOFER = [\n  'CONFIANZA_GLOBAL_BAJA',\n  'CAMPOS_CRITICOS_OBSERVADOS',\n  'TIPO_NO_RECONOCIDO',\n  'TIPO_INCIERTO',\n  'SALIDA_NO_PARSEABLE',\n  'ARCHIVO_RECHAZADO',\n];\n\nconst MOTIVOS_DEL_OPERADOR = [\n  'REGLAS_CON_ERROR',\n  'EMPAREJAMIENTO_NO_RESUELTO',\n  'CAE_RECHAZADO',\n  'CAE_OBSERVADO',\n  'PLANTILLA_NO_PUBLICADA',\n];\n\nconst MOTIVOS_TRANSITORIOS = [\n  'PROVEEDOR_SATURADO',\n  'PROVEEDOR_NO_DISPONIBLE',\n  'PROVEEDOR_INALCANZABLE',\n  'PROVEEDOR_CON_ERROR',\n];\n\nfunction normalizarTelefono(valor) {\n  const solo = String(valor || '').replace(/\\D/g, '');\n  return solo.length >= 10 ? solo : null;\n}\n\nfunction extensionDe(tipoMime, nombre) {\n  const porMime = TIPOS_ACEPTADOS[String(tipoMime || '').toLowerCase()];\n  if (porMime) return porMime;\n  const porNombre = String(nombre || '').split('.').pop();\n  return Object.values(TIPOS_ACEPTADOS).includes(porNombre) ? porNombre : null;\n}\n\nfunction nombreDelArchivo(entrada) {\n  const propuesto = String(entrada.nombreArchivo || '').trim();\n  if (propuesto) return propuesto.replace(/[\\\\/:*?\"<>|]/g, '_').slice(0, 120);\n\n  const extension = extensionDe(entrada.tipoMime, propuesto) || 'pdf';\n  const marca = new Date().toISOString().slice(0, 19).replace(/[:T-]/g, '');\n  return `whatsapp_${entrada.telefono || 'chofer'}_${marca}.${extension}`;\n}\n\nfunction evaluarEntrada(entrada) {\n  const telefono = normalizarTelefono(entrada.telefono);\n  if (!telefono) {\n    return { aceptado: false, motivo: 'SIN_TELEFONO', mensaje: null };\n  }\n\n  if (!entrada.contenidoBase64 || String(entrada.contenidoBase64).length < 32) {\n    return {\n      aceptado: false,\n      motivo: 'SIN_CONTENIDO',\n      mensaje: 'No me llego el archivo. Probá mandarlo de nuevo.',\n    };\n  }\n\n  if (!extensionDe(entrada.tipoMime, entrada.nombreArchivo)) {\n    return {\n      aceptado: false,\n      motivo: 'TIPO_NO_ACEPTADO',\n      mensaje: 'Ese formato no lo puedo leer. Mandame una foto o un PDF.',\n    };\n  }\n\n  const tamano = Math.floor((String(entrada.contenidoBase64).length * 3) / 4);\n  if (tamano > TAMANO_MAXIMO) {\n    return {\n      aceptado: false,\n      motivo: 'DEMASIADO_GRANDE',\n      mensaje: 'El archivo pesa demasiado. Probá con una foto de menor calidad.',\n    };\n  }\n\n  return { aceptado: true, motivo: null, mensaje: null, telefono, tamano };\n}\n\nfunction prepararCarga(entrada) {\n  const evaluacion = evaluarEntrada(entrada);\n  if (!evaluacion.aceptado) return { ...evaluacion, carga: null };\n\n  return {\n    ...evaluacion,\n    carga: {\n      origen: 'WHATSAPP',\n      nombreArchivo: nombreDelArchivo({ ...entrada, telefono: evaluacion.telefono }),\n      tipoMime: String(entrada.tipoMime || '').toLowerCase() || undefined,\n      contenidoBase64: entrada.contenidoBase64,\n      referenciaExterna: entrada.referenciaExterna || null,\n      plantilla: entrada.plantillaSugerida || null,\n    },\n    claveIdempotencia: entrada.idMensaje ? `wsp:${entrada.idMensaje}` : null,\n  };\n}\n\nfunction acusarRecibo(resultado) {\n  if (resultado && resultado.motivo === 'DUPLICADO') {\n    return 'Ese documento ya lo tenia. No hace falta que lo mandes de nuevo.';\n  }\n  return 'Recibi el documento, lo estoy leyendo. En un rato te confirmo.';\n}\n\nfunction quienResuelve(codigoMotivo) {\n  const codigo = String(codigoMotivo || '').toUpperCase();\n  if (MOTIVOS_TRANSITORIOS.includes(codigo)) return 'NADIE';\n  if (MOTIVOS_DEL_CHOFER.includes(codigo)) return 'CHOFER';\n  if (MOTIVOS_DEL_OPERADOR.includes(codigo)) return 'OPERADOR';\n  return 'OPERADOR';\n}\n\nfunction mensajeParaElChofer(evento) {\n  const tipo = String(evento.tipoEvento || '');\n  const datos = evento.datos || {};\n  const nombre = evento.nombreArchivo ? ` (${evento.nombreArchivo})` : '';\n\n  if (tipo === 'documento.aprobado') {\n    const asociado = datos.sujetoId ? ` Quedo asociado al pedido ${datos.sujetoId}.` : '';\n    return {\n      escribir: true,\n      destino: 'CHOFER',\n      texto: `Listo, el documento${nombre} quedo cargado.${asociado} Gracias.`,\n    };\n  }\n\n  if (tipo !== 'documento.observado') {\n    return { escribir: false, destino: null, texto: null };\n  }\n\n  const responsable = quienResuelve(datos.codigoMotivo);\n\n  if (responsable === 'NADIE') {\n    return { escribir: false, destino: null, texto: null };\n  }\n\n  if (responsable === 'OPERADOR') {\n    return {\n      escribir: false,\n      destino: 'OPERADOR',\n      texto: null,\n      motivo: datos.codigoMotivo || null,\n    };\n  }\n\n  const textos = {\n    CONFIANZA_GLOBAL_BAJA: 'No llego a leer bien el documento. Probá sacarle la foto de nuevo, derecho y con buena luz.',\n    CAMPOS_CRITICOS_OBSERVADOS: 'Me falta leer algunos datos del documento. Mandame una foto donde se vea la hoja completa.',\n    TIPO_NO_RECONOCIDO: 'No pude reconocer que documento es. Confirmame que mandaste el remito o la factura correcta.',\n    TIPO_INCIERTO: 'No estoy seguro de que documento es. Mandame una foto mas clara del encabezado.',\n    SALIDA_NO_PARSEABLE: 'No pude interpretar el documento. Probá mandarlo de nuevo.',\n    ARCHIVO_RECHAZADO: 'Ese archivo no lo pude abrir. Mandame una foto o un PDF.',\n  };\n\n  const codigo = String(datos.codigoMotivo || '').toUpperCase();\n\n  return {\n    escribir: true,\n    destino: 'CHOFER',\n    texto: textos[codigo] || 'Necesito que me mandes el documento de nuevo, no lo pude procesar bien.',\n    motivo: codigo || null,\n  };\n}\n\nfunction puedeEscribirle(estado) {\n  const ahora = Number(estado.ahora || Date.now());\n\n  if (estado.botPausado) {\n    return { puede: false, motivo: 'BOT_PAUSADO' };\n  }\n\n  if (estado.preguntaPendienteDeOtroAgente) {\n    return { puede: false, motivo: 'OTRO_AGENTE_ESPERANDO' };\n  }\n\n  const minutosDesdeElUltimo = estado.ultimoAvisoEn\n    ? (ahora - Number(estado.ultimoAvisoEn)) / 60000\n    : Infinity;\n\n  if (minutosDesdeElUltimo < 10) {\n    return { puede: false, motivo: 'RECIEN_LE_ESCRIBIMOS' };\n  }\n\n  if (Number(estado.avisosDelDocumento || 0) >= 3) {\n    return { puede: false, motivo: 'YA_INSISTIMOS' };\n  }\n\n  return { puede: true, motivo: null };\n}\n\n\nconst decision = $('Decidir que contestar').first().json;\n\nconst pausado = $('Redis - Bot pausado').first().json.propertyName;\nconst pendiente = $('Redis - Pregunta pendiente').first().json.propertyName;\nconst estadoCrudo = $('Redis - Estado del documento').first().json.propertyName;\n\nlet estado = {};\ntry {\n  estado = estadoCrudo ? JSON.parse(estadoCrudo) : {};\n} catch (error) {\n  estado = {};\n}\n\nlet preguntaDeOtro = false;\nif (pendiente) {\n  try {\n    const abierta = JSON.parse(pendiente);\n    preguntaDeOtro = abierta && abierta.agent && abierta.agent !== 'PEDIDO_DOCUMENTO';\n  } catch (error) {\n    preguntaDeOtro = true;\n  }\n}\n\nconst permiso = puedeEscribirle({\n  botPausado: Boolean(pausado),\n  preguntaPendienteDeOtroAgente: preguntaDeOtro,\n  ultimoAvisoEn: estado.ultimoAvisoEn || null,\n  avisosDelDocumento: estado.avisosPorDocumento\n    ? estado.avisosPorDocumento[decision.documentoId] || 0\n    : 0,\n});\n\nconst avisos = estado.avisosPorDocumento || {};\nif (permiso.puede) {\n  avisos[decision.documentoId] = (avisos[decision.documentoId] || 0) + 1;\n}\n\nreturn [{\n  json: {\n    ...decision,\n    puedeEscribir: permiso.puede && decision.escribir,\n    motivoBloqueo: permiso.motivo,\n    estadoNuevo: JSON.stringify({\n      ...estado,\n      ultimoAvisoEn: permiso.puede ? Date.now() : estado.ultimoAvisoEn || null,\n      avisosPorDocumento: avisos,\n    }),\n  },\n}];\n"
+      },
+      "name": "Se le puede escribir",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        640,
+        200
+      ],
+      "id": "se-le-puede-escribir"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "puede",
+              "leftValue": "={{ $json.puedeEscribir }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        }
+      },
+      "name": "Conviene escribirle",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        860,
+        200
+      ],
+      "id": "conviene-escribirle"
+    },
+    {
+      "parameters": {
+        "operation": "set",
+        "key": "=b49:documentos:v1:chofer:{{ $json.telefono }}",
+        "value": "={{ $json.estadoNuevo }}",
+        "keyType": "string",
+        "expire": true,
+        "ttl": 604800,
+        "options": {}
+      },
+      "name": "Redis - Guardar estado",
+      "type": "n8n-nodes-base.redis",
+      "typeVersion": 1,
+      "position": [
+        1080,
+        120
+      ],
+      "id": "redis---guardar-estado",
+      "credentials": {
+        "redis": {
+          "id": "2sILiPAzeK1XjEwH",
+          "name": "Redis account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.FOLLOW_WHATSAPP_URL }}",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ telefono: $('Se le puede escribir').first().json.telefono, mensaje: $('Se le puede escribir').first().json.texto }) }}",
+        "options": {
+          "response": {
+            "response": {
+              "neverError": true
+            }
+          }
+        }
+      },
+      "name": "Escribirle al chofer",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [
+        1300,
+        120
+      ],
+      "id": "escribirle-al-chofer"
+    },
+    {
+      "parameters": {
+        "jsCode": "\nconst decision = $input.first().json;\n\nreturn [{\n  json: {\n    paraElOperador: true,\n    documentoId: decision.documentoId,\n    motivo: decision.codigoMotivo,\n    tipoEvento: decision.tipoEvento,\n    nota: 'Queda en el centro de excepciones de IA-Docs. No se le escribe al chofer.',\n  },\n}];\n"
+      },
+      "name": "Dejar para el operador",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -20,
+        420
+      ],
+      "id": "dejar-para-el-operador"
+    },
+    {
+      "parameters": {
+        "jsCode": "\nconst decision = $input.first().json;\n\nreturn [{\n  json: {\n    seEscribio: false,\n    motivoBloqueo: decision.motivoBloqueo,\n    documentoId: decision.documentoId,\n    telefono: decision.telefono,\n    nota: 'No se le escribio al chofer para no atosigarlo. Se reintenta mas tarde.',\n  },\n}];\n"
+      },
+      "name": "No escribirle ahora",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1080,
+        320
+      ],
+      "id": "no-escribirle-ahora"
+    }
+  ],
+  "connections": {
+    "IA-Docs avisa": {
+      "main": [
+        [
+          {
+            "node": "Decidir que contestar",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Decidir que contestar": {
+      "main": [
+        [
+          {
+            "node": "Hay algo que decir",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Hay algo que decir": {
+      "main": [
+        [
+          {
+            "node": "Redis - Bot pausado",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Dejar para el operador",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Redis - Bot pausado": {
+      "main": [
+        [
+          {
+            "node": "Redis - Pregunta pendiente",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Redis - Pregunta pendiente": {
+      "main": [
+        [
+          {
+            "node": "Redis - Estado del documento",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Redis - Estado del documento": {
+      "main": [
+        [
+          {
+            "node": "Se le puede escribir",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Se le puede escribir": {
+      "main": [
+        [
+          {
+            "node": "Conviene escribirle",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Conviene escribirle": {
+      "main": [
+        [
+          {
+            "node": "Redis - Guardar estado",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "No escribirle ahora",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Redis - Guardar estado": {
+      "main": [
+        [
+          {
+            "node": "Escribirle al chofer",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "active": false
+}
