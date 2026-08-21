@@ -6,7 +6,12 @@ import { cerrar, enTransaccion } from './conexion.js';
 
 const INQUILINO_DEMO = '11111111-1111-1111-1111-111111111111';
 
-export const CLAVE_API_DEMO = 'dvk_demo_4f2a9c7b1e6d8035a1c4b9e2f7d60831';
+const CLAVE_API_DEMO_POR_DEFECTO = 'dvk_demo_4f2a9c7b1e6d8035a1c4b9e2f7d60831';
+
+export function claveApiDemo(): string {
+  const configurada = process.env['DOCVANCE_API_KEY']?.trim();
+  return configurada || CLAVE_API_DEMO_POR_DEFECTO;
+}
 
 const VIGENCIAS_DEMO = [
   { plantilla: 'VTV', familia: 'VEHICULAR', archivo: 'vtv-AB123CD.pdf', dias: -45, sujeto: 'AB123CD' },
@@ -90,6 +95,8 @@ export async function sembrar(): Promise<void> {
     );
   }
 
+  const claveApi = claveApiDemo();
+
   await enTransaccion(async (cliente) => {
     await cliente.query(
       `INSERT INTO inquilino (id, nombre, plan)
@@ -146,9 +153,9 @@ export async function sembrar(): Promise<void> {
        ON CONFLICT (huella) DO UPDATE SET activa = true`,
       [
         INQUILINO_DEMO,
-        'Clave de demostracion',
-        CLAVE_API_DEMO.slice(0, 12),
-        createHash('sha256').update(CLAVE_API_DEMO).digest('hex'),
+        'Clave de desarrollo local',
+        claveApi.slice(0, 12),
+        createHash('sha256').update(claveApi).digest('hex'),
       ],
     );
 
@@ -192,7 +199,7 @@ export async function sembrar(): Promise<void> {
   });
 
   process.stdout.write(`sembrado: inquilino Demo Logistics, 3 usuarios, ${Object.keys(PLANTILLAS_BASE).length} plantillas y 6 objetos de negocio\n`);
-  process.stdout.write(`clave de api: ${CLAVE_API_DEMO}\n`);
+  process.stdout.write(`clave de api: ${claveApi}\n`);
 }
 
 const ejecutadoDirecto = process.argv[1]?.includes('sembrar');

@@ -22,17 +22,39 @@ pnpm build
 pnpm dev
 ```
 
-El sembrado deja una clave de API de demostracion y la imprime en pantalla. Es
-una clave conocida y esta en el codigo a proposito, asi que el sembrado se niega
-a correr con `NODE_ENV=production`. Con esa clave ya podes cargar documentos:
+La API conserva autenticación también en desarrollo. Configurá una clave propia en `.env`:
 
-```bash
-curl http://localhost:4000/api/v1/documentos   -H "Authorization: Bearer <la clave que imprimio el sembrado>"
+```env
+DOCVANCE_API_KEY=dvk_local_tu_clave_segura
 ```
 
-Ademas de la clave hay credenciales de usuario para probar los roles:
+`pnpm db:sembrar` registra solamente la huella SHA-256 de esa clave en PostgreSQL y la deja con rol `ADMIN_INQUILINO`. Si cambiás la clave, ejecutá nuevamente `pnpm db:sembrar`.
+
+Con esa clave podés cargar documentos:
+
+```bash
+curl http://localhost:4000/api/v1/documentos \
+  -H "Authorization: Bearer $DOCVANCE_API_KEY"
+```
+
+También se acepta `X-Clave-Api: <clave>`.
+
+Además de la clave hay credenciales de usuario para probar los roles:
 `Bearer usuario:admin@demo.local`, `usuario:operador@demo.local` y
 `usuario:revisor@demo.local`.
+
+Si el cliente corre dentro de Docker, por ejemplo n8n, no uses `localhost:4000`: `localhost` apunta al propio contenedor. En Docker Desktop usá:
+
+```text
+http://host.docker.internal:4000
+```
+
+Por ejemplo, B49 debe llamar:
+
+```text
+POST http://host.docker.internal:4000/api/v1/documentos
+Authorization: Bearer <DOCVANCE_API_KEY>
+```
 
 | Servicio | Puerto | Para qué |
 |---|---|---|
