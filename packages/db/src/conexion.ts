@@ -10,8 +10,10 @@ export function urlPostgres(): string {
 
 export function conexion(): Pool {
   if (!piscina) {
+    const ssl = process.env['POSTGRES_SSL'] === 'true' ? { rejectUnauthorized: false } : undefined;
     piscina = new Pool({
       connectionString: urlPostgres(),
+      ssl,
       max: Number(process.env['POSTGRES_MAX_CONEXIONES'] ?? 10),
       idleTimeoutMillis: 30_000,
       connectionTimeoutMillis: 10_000,

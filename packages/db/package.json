@@ -18,7 +18,8 @@
     "migrar": "tsx --env-file-if-exists=../../.env src/migrar.ts",
     "sembrar": "tsx --env-file-if-exists=../../.env src/sembrar.ts",
     "test:integracion": "vitest run",
-    "limpiar": "tsx --env-file-if-exists=../../.env src/limpiar.ts"
+    "limpiar": "tsx --env-file-if-exists=../../.env src/limpiar.ts",
+    "alta-inquilino": "tsx --env-file-if-exists=../../.env src/alta-inquilino.ts"
   },
   "dependencies": {
     "pg": "^8.13.0",
