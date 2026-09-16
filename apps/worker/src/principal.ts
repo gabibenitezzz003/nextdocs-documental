@@ -3,9 +3,9 @@ import {
   cerrarRedis,
   configuracionCorreo,
   trabajador,
-} from '@docvance/adaptadores';
-import { NOMBRE_COLA_PROCESAMIENTO } from '@docvance/contratos';
-import { cerrar } from '@docvance/db';
+} from '@nextdocs/adaptadores';
+import { NOMBRE_COLA_PROCESAMIENTO } from '@nextdocs/contratos';
+import { cerrar } from '@nextdocs/db';
 
 import { procesar, type TrabajoProcesamiento } from './procesador.js';
 import { publicarPendientes } from './publicador.js';

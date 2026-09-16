@@ -1,4 +1,4 @@
-import type { Plantilla } from '@docvance/dominio';
+import type { Plantilla } from '@nextdocs/dominio';
 
 export interface EntradaClasificacion {
   contenido: Buffer;

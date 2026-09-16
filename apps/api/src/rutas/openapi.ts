@@ -1,6 +1,6 @@
 import type { FastifyInstance } from 'fastify';
 
-import { CODIGOS_ERROR, LIMITES, TIPOS_ACEPTADOS, TIPOS_EVENTO } from '@docvance/contratos';
+import { CODIGOS_ERROR, LIMITES, TIPOS_ACEPTADOS, TIPOS_EVENTO } from '@nextdocs/contratos';
 
 const PROBLEMA = {
   type: 'object',
@@ -26,7 +26,7 @@ function documento(): Record<string, unknown> {
   return {
     openapi: '3.1.0',
     info: {
-      title: 'DocVance AI',
+      title: 'NextDocs Documental',
       version: '1.0.0',
       description: 'Del documento a la accion. Recepcion, extraccion con evidencia, emparejamiento, revision humana y entrega de eventos.',
     },
@@ -272,7 +272,7 @@ const PAGINA = `<!doctype html>
 <html lang="es">
   <head>
     <meta charset="utf-8" />
-    <title>DocVance AI</title>
+    <title>NextDocs Documental</title>
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <style>body { margin: 0 } rapi-doc { height: 100vh }</style>
   </head>

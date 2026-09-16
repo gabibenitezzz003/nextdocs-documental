@@ -1,8 +1,8 @@
 import { createHash } from 'node:crypto';
 import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
 
-import { conexion } from '@docvance/db';
-import type { Actor } from '@docvance/nucleo';
+import { conexion } from '@nextdocs/db';
+import type { Actor } from '@nextdocs/nucleo';
 
 import { ErrorApi } from './problemas.js';
 

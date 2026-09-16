@@ -14,13 +14,13 @@ jobs:
       postgres:
         image: postgres:16-alpine
         env:
-          POSTGRES_USER: docvance
-          POSTGRES_PASSWORD: docvance
-          POSTGRES_DB: docvance
+          POSTGRES_USER: nextdocs_documental
+          POSTGRES_PASSWORD: nextdocs_documental
+          POSTGRES_DB: nextdocs_documental
         ports:
           - 5433:5432
         options: >-
-          --health-cmd "pg_isready -U docvance"
+          --health-cmd "pg_isready -U nextdocs_documental"
           --health-interval 5s
           --health-timeout 3s
           --health-retries 20
@@ -36,7 +36,7 @@ jobs:
           --health-retries 20
 
     env:
-      POSTGRES_URL: postgresql://docvance:docvance@localhost:5433/docvance
+      POSTGRES_URL: postgresql://nextdocs_documental:nextdocs_documental@localhost:5433/nextdocs_documental
       REDIS_URL: redis://localhost:6380
 
     steps:

@@ -8,9 +8,9 @@ import {
   type Almacenamiento,
   type MotorDocumental,
   type Segmento,
-} from '@docvance/adaptadores';
-import { NOMBRE_COLA_PROCESAMIENTO, claveAlmacen } from '@docvance/contratos';
-import { enTransaccion } from '@docvance/db';
+} from '@nextdocs/adaptadores';
+import { NOMBRE_COLA_PROCESAMIENTO, claveAlmacen } from '@nextdocs/contratos';
+import { enTransaccion } from '@nextdocs/db';
 
 import { SISTEMA, auditar, encolarEvento, type Actor } from './auditoria.js';
 

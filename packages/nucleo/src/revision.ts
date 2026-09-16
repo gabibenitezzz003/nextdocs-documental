@@ -1,8 +1,8 @@
 import { createHash, randomUUID } from 'node:crypto';
 import type { PoolClient } from 'pg';
 
-import { conexion, enTransaccion } from '@docvance/db';
-import { exigirTransicion, normalizarCuit, type EstadoDocumento } from '@docvance/dominio';
+import { conexion, enTransaccion } from '@nextdocs/db';
+import { exigirTransicion, normalizarCuit, type EstadoDocumento } from '@nextdocs/dominio';
 
 import { SISTEMA, auditar, encolarEvento, type Actor } from './auditoria.js';
 import { EMISOR_GENERICO, registrarCorreccion } from './aprendizaje.js';

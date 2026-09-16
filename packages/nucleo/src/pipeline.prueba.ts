@@ -1,9 +1,9 @@
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 
-import { AlmacenamientoEnMemoria, MotorSimulado, limpiarGuiones, registrarGuion } from '@docvance/adaptadores';
-import { cerrar, conexion, enTransaccion } from '@docvance/db';
-import { exigirBaseDePruebas, migrar, usarBaseDePruebas } from '@docvance/db';
-import { DNI, FACTURA, REMITO, VTV, emparejar, type ObjetoNegocio, type ValorExtraido } from '@docvance/dominio';
+import { AlmacenamientoEnMemoria, MotorSimulado, limpiarGuiones, registrarGuion } from '@nextdocs/adaptadores';
+import { cerrar, conexion, enTransaccion } from '@nextdocs/db';
+import { exigirBaseDePruebas, migrar, usarBaseDePruebas } from '@nextdocs/db';
+import { DNI, FACTURA, REMITO, VTV, emparejar, type ObjetoNegocio, type ValorExtraido } from '@nextdocs/dominio';
 import { createHash, randomUUID } from 'node:crypto';
 
 import { FallaTransitoria, procesarDocumento } from './procesamiento.js';

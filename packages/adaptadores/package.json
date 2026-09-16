@@ -1,5 +1,5 @@
 {
-  "name": "@docvance/adaptadores",
+  "name": "@nextdocs/adaptadores",
   "version": "0.1.0",
   "private": true,
   "type": "module",
@@ -20,8 +20,8 @@
   "dependencies": {
     "@aws-sdk/client-s3": "^3.658.0",
     "@aws-sdk/s3-request-presigner": "^3.658.0",
-    "@docvance/contratos": "workspace:*",
-    "@docvance/dominio": "workspace:*",
+    "@nextdocs/contratos": "workspace:*",
+    "@nextdocs/dominio": "workspace:*",
     "bullmq": "^5.21.2",
     "ioredis": "^5.4.1",
     "node-forge": "^1.4.0",

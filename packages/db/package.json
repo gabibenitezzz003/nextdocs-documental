@@ -1,5 +1,5 @@
 {
-  "name": "@docvance/db",
+  "name": "@nextdocs/db",
   "version": "0.1.0",
   "private": true,
   "type": "module",
@@ -22,7 +22,7 @@
   },
   "dependencies": {
     "pg": "^8.13.0",
-    "@docvance/dominio": "workspace:*"
+    "@nextdocs/dominio": "workspace:*"
   },
   "devDependencies": {
     "@types/pg": "^8.11.10",

@@ -1,9 +1,9 @@
 import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 
-import { conexion, enTransaccion } from '@docvance/db';
-import { PLANTILLAS_BASE } from '@docvance/dominio';
-import { SISTEMA, auditar } from '@docvance/nucleo';
+import { conexion, enTransaccion } from '@nextdocs/db';
+import { PLANTILLAS_BASE } from '@nextdocs/dominio';
+import { SISTEMA, auditar } from '@nextdocs/nucleo';
 
 import { exigirPermiso } from '../contexto.js';
 import { ErrorApi, noEncontrado } from '../problemas.js';

@@ -69,8 +69,8 @@ export interface DatosAprobado {
   sello: string;
 }
 
-export const NOMBRE_COLA_PROCESAMIENTO = 'docvance-procesamiento';
-export const NOMBRE_COLA_ENTREGA = 'docvance-entrega';
+export const NOMBRE_COLA_PROCESAMIENTO = 'nextdocs-documental-procesamiento';
+export const NOMBRE_COLA_ENTREGA = 'nextdocs-documental-entrega';
 
 export interface TareaProcesamiento {
   documentoId: string;

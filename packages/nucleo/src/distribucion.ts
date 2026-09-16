@@ -7,8 +7,8 @@ import {
   type Adjunto,
   type Almacenamiento,
   type ErrorCorreo,
-} from '@docvance/adaptadores';
-import { conexion, enTransaccion } from '@docvance/db';
+} from '@nextdocs/adaptadores';
+import { conexion, enTransaccion } from '@nextdocs/db';
 
 import { SISTEMA, auditar } from './auditoria.js';
 import {

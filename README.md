@@ -1,4 +1,4 @@
-# DocVance AI
+# NextDocs Documental
 
 Plataforma de inteligencia documental y automatización de procesos.
 
@@ -25,7 +25,7 @@ pnpm dev
 La API conserva autenticación también en desarrollo. Configurá una clave propia en `.env`:
 
 ```env
-DOCVANCE_API_KEY=dvk_local_tu_clave_segura
+NEXTDOCS_DOCUMENTAL_API_KEY=ndk_local_tu_clave_segura
 ```
 
 `pnpm db:sembrar` registra solamente la huella SHA-256 de esa clave en PostgreSQL y la deja con rol `ADMIN_INQUILINO`. Si cambiás la clave, ejecutá nuevamente `pnpm db:sembrar`.
@@ -34,7 +34,7 @@ Con esa clave podés cargar documentos:
 
 ```bash
 curl http://localhost:4000/api/v1/documentos \
-  -H "Authorization: Bearer $DOCVANCE_API_KEY"
+  -H "Authorization: Bearer $NEXTDOCS_DOCUMENTAL_API_KEY"
 ```
 
 También se acepta `X-Clave-Api: <clave>`.
@@ -53,7 +53,7 @@ Por ejemplo, B49 debe llamar:
 
 ```text
 POST http://host.docker.internal:4000/api/v1/documentos
-Authorization: Bearer <DOCVANCE_API_KEY>
+Authorization: Bearer <NEXTDOCS_DOCUMENTAL_API_KEY>
 ```
 
 | Servicio | Puerto | Para qué |
@@ -62,7 +62,7 @@ Authorization: Bearer <DOCVANCE_API_KEY>
 | PostgreSQL | 5433 | estado y auditoría |
 | Redis | 6380 | colas y cache |
 | MinIO | 9100 | originales |
-| MinIO consola | 9101 | usuario docvance, clave docvance123 |
+| MinIO consola | 9101 | usuario nextdocs_documental, clave nextdocs_documental123 |
 
 Los puertos están corridos a propósito para no chocar con otros proyectos.
 

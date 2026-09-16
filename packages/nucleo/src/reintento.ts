@@ -1,10 +1,10 @@
-import type { MotorDocumental } from '@docvance/adaptadores';
+import type { MotorDocumental } from '@nextdocs/adaptadores';
 import {
   procesarCampos,
   type CampoPlantilla,
   type Plantilla,
   type ResultadoProcesado,
-} from '@docvance/dominio';
+} from '@nextdocs/dominio';
 
 export const MAXIMO_CAMPOS_REINTENTO = 6;
 

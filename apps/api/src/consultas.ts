@@ -1,4 +1,4 @@
-import { conexion } from '@docvance/db';
+import { conexion } from '@nextdocs/db';
 
 export interface FilaBandeja {
   id: string;

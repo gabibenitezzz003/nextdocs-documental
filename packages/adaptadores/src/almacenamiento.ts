@@ -22,7 +22,7 @@ export class AlmacenamientoS3 implements Almacenamiento {
     const endpoint = configuracion?.endpoint ?? process.env['ALMACENAMIENTO_ENDPOINT'];
     const clave = configuracion?.clave ?? process.env['ALMACENAMIENTO_CLAVE'];
     const secreto = configuracion?.secreto ?? process.env['ALMACENAMIENTO_SECRETO'];
-    this.balde = configuracion?.balde ?? process.env['ALMACENAMIENTO_BALDE'] ?? 'docvance-documentos';
+    this.balde = configuracion?.balde ?? process.env['ALMACENAMIENTO_BALDE'] ?? 'nextdocs-documental-documentos';
 
     if (!endpoint || !clave || !secreto) {
       throw new Error('Falta configurar el almacenamiento: endpoint, clave y secreto.');

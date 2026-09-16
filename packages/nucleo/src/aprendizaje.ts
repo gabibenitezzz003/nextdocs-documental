@@ -1,6 +1,6 @@
 import type { PoolClient } from 'pg';
 
-import { conexion } from '@docvance/db';
+import { conexion } from '@nextdocs/db';
 import {
   claveComparacion,
   hallazgo,
@@ -9,7 +9,7 @@ import {
   type Hallazgo,
   type Plantilla,
   type ValorExtraido,
-} from '@docvance/dominio';
+} from '@nextdocs/dominio';
 
 export const EMISOR_GENERICO = '*';
 export const MAXIMO_PISTAS = 12;

@@ -1,8 +1,8 @@
 import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 
-import { esquemaResolverExcepcion } from '@docvance/contratos';
-import { DocumentoInexistente, resolverExcepcion } from '@docvance/nucleo';
+import { esquemaResolverExcepcion } from '@nextdocs/contratos';
+import { DocumentoInexistente, resolverExcepcion } from '@nextdocs/nucleo';
 
 import {
   colaDeExcepciones,
@@ -99,8 +99,8 @@ export async function rutasDeOperacion(servidor: FastifyInstance): Promise<void>
   servidor.post('/api/v1/simulador/erp', async (pedido) => {
     pedido.log.info(
       {
-        firma: pedido.headers['x-docvance-firma'] ?? null,
-        evento: pedido.headers['x-docvance-evento'] ?? null,
+        firma: pedido.headers['x-nextdocs-documental-firma'] ?? null,
+        evento: pedido.headers['x-nextdocs-documental-evento'] ?? null,
       },
       'el simulador de erp recibio un evento',
     );

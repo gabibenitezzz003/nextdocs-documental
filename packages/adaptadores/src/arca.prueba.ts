@@ -30,9 +30,9 @@ function certificadoDePrueba(): { certificado: string; clavePrivada: string } {
   certificado.validity.notAfter = new Date(Date.now() + 86400_000);
 
   const sujeto = [
-    { name: 'commonName', value: 'docvance-prueba' },
+    { name: 'commonName', value: 'nextdocs-documental-prueba' },
     { name: 'countryName', value: 'AR' },
-    { name: 'organizationName', value: 'DocVance' },
+    { name: 'organizationName', value: 'NextDocs Documental' },
   ];
 
   certificado.setSubject(sujeto);

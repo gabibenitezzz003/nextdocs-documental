@@ -78,7 +78,7 @@ probar('rechaza un archivo enorme', () => {
   assert.strictEqual(salida.motivo, 'DEMASIADO_GRANDE');
 });
 
-process.stdout.write('\ncarga para docvance\n');
+process.stdout.write('\ncarga para nextdocs_documental\n');
 
 probar('arma el pedido con origen whatsapp', () => {
   const salida = prepararCarga({

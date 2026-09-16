@@ -1,27 +1,27 @@
-name: docvance
+name: nextdocs_documental
 
 services:
   postgres:
     image: postgres:16-alpine
-    container_name: docvance-postgres
+    container_name: nextdocs-documental-postgres
     restart: unless-stopped
     environment:
-      POSTGRES_USER: docvance
-      POSTGRES_PASSWORD: docvance
-      POSTGRES_DB: docvance
+      POSTGRES_USER: nextdocs_documental
+      POSTGRES_PASSWORD: nextdocs_documental
+      POSTGRES_DB: nextdocs_documental
     ports:
       - "5433:5432"
     volumes:
       - postgres-datos:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U docvance -d docvance"]
+      test: ["CMD-SHELL", "pg_isready -U nextdocs_documental -d nextdocs_documental"]
       interval: 5s
       timeout: 3s
       retries: 20
 
   redis:
     image: redis:7-alpine
-    container_name: docvance-redis
+    container_name: nextdocs-documental-redis
     restart: unless-stopped
     command: ["redis-server", "--appendonly", "yes"]
     ports:
@@ -36,15 +36,15 @@ services:
 
   almacenamiento:
     image: minio/minio:latest
-    container_name: docvance-almacenamiento
+    container_name: nextdocs-documental-almacenamiento
     restart: unless-stopped
     command: server /datos --console-address ":9101"
     environment:
-      MINIO_ROOT_USER: docvance
-      MINIO_ROOT_PASSWORD: docvance123
+      MINIO_ROOT_USER: nextdocs_documental
+      MINIO_ROOT_PASSWORD: nextdocs_documental123
     ports:
-      - "9100:9000"
-      - "9101:9101"
+      - "9200:9000"
+      - "9201:9101"
     volumes:
       - almacenamiento-datos:/datos
     healthcheck:
@@ -60,9 +60,9 @@ services:
         condition: service_healthy
     entrypoint: >
       /bin/sh -c "
-      mc alias set local http://almacenamiento:9000 docvance docvance123;
-      mc mb --ignore-existing local/docvance-documentos;
-      mc anonymous set none local/docvance-documentos;
+      mc alias set local http://almacenamiento:9000 nextdocs_documental nextdocs_documental123;
+      mc mb --ignore-existing local/nextdocs-documental-documentos;
+      mc anonymous set none local/nextdocs-documental-documentos;
       exit 0;
       "
 

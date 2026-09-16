@@ -1,5 +1,5 @@
 {
-  "name": "@docvance/nucleo",
+  "name": "@nextdocs/nucleo",
   "version": "0.1.0",
   "private": true,
   "type": "module",
@@ -18,10 +18,10 @@
     "test:integracion": "vitest run"
   },
   "dependencies": {
-    "@docvance/adaptadores": "workspace:*",
-    "@docvance/contratos": "workspace:*",
-    "@docvance/db": "workspace:*",
-    "@docvance/dominio": "workspace:*",
+    "@nextdocs/adaptadores": "workspace:*",
+    "@nextdocs/contratos": "workspace:*",
+    "@nextdocs/db": "workspace:*",
+    "@nextdocs/dominio": "workspace:*",
     "@types/pg": "^8.11.10",
     "pg": "^8.13.0"
   },

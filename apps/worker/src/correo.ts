@@ -1,5 +1,5 @@
-import { almacenamientoDeEntorno, correoConfigurado } from '@docvance/adaptadores';
-import { despacharEnvios, type ResultadoDespacho } from '@docvance/nucleo';
+import { almacenamientoDeEntorno, correoConfigurado } from '@nextdocs/adaptadores';
+import { despacharEnvios, type ResultadoDespacho } from '@nextdocs/nucleo';
 
 const SIN_CORREO: ResultadoDespacho = { revisados: 0, enviados: 0, fallidos: 0 };
 

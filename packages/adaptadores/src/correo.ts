@@ -13,7 +13,7 @@ export function configuracionCorreo(): ConfiguracionCorreo | null {
   const esProduccion = process.env['NODE_ENV'] === 'production';
   const anfitrionConfigurado = process.env['CORREO_ANFITRION']?.trim() ?? '';
 
-  // En desarrollo DocVance usa Mailpit como SMTP local. Esto evita que un
+  // En desarrollo NextDocs Documental usa Mailpit como SMTP local. Esto evita que un
   // CORREO_ANFITRION vacio (tal como quedaba al copiar el .env.ejemplo viejo)
   // desactive silenciosamente todo el despachador de correo.
   const anfitrion = anfitrionConfigurado || (esProduccion ? '' : 'localhost');
@@ -31,7 +31,7 @@ export function configuracionCorreo(): ConfiguracionCorreo | null {
     seguro: process.env['CORREO_SEGURO'] === 'true' || puerto === 465,
     usuario: process.env['CORREO_USUARIO']?.trim() || null,
     clave: process.env['CORREO_CLAVE'] || null,
-    remitente: process.env['CORREO_REMITENTE']?.trim() || 'DocVance <no-reply@docvance.local>',
+    remitente: process.env['CORREO_REMITENTE']?.trim() || 'NextDocs Documental <no-reply@nextdocs-documental.local>',
   };
 }
 

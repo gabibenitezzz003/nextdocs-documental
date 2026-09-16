@@ -1,5 +1,5 @@
 {
-  "name": "@docvance/worker",
+  "name": "@nextdocs/worker",
   "version": "0.1.0",
   "private": true,
   "type": "module",
@@ -12,11 +12,11 @@
     "inicio": "node --env-file-if-exists=../../.env dist/principal.js"
   },
   "dependencies": {
-    "@docvance/adaptadores": "workspace:*",
-    "@docvance/contratos": "workspace:*",
-    "@docvance/db": "workspace:*",
-    "@docvance/dominio": "workspace:*",
-    "@docvance/nucleo": "workspace:*",
+    "@nextdocs/adaptadores": "workspace:*",
+    "@nextdocs/contratos": "workspace:*",
+    "@nextdocs/db": "workspace:*",
+    "@nextdocs/dominio": "workspace:*",
+    "@nextdocs/nucleo": "workspace:*",
     "bullmq": "^5.21.2",
     "pg": "^8.13.0"
   },

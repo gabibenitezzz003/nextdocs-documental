@@ -1,9 +1,9 @@
 import { createHash, randomUUID } from 'node:crypto';
 import type { PoolClient } from 'pg';
 
-import type { Almacenamiento, MotorDocumental } from '@docvance/adaptadores';
-import { ErrorMotorDocumental, esFallaTransitoria } from '@docvance/adaptadores';
-import { conexion, enTransaccion } from '@docvance/db';
+import type { Almacenamiento, MotorDocumental } from '@nextdocs/adaptadores';
+import { ErrorMotorDocumental, esFallaTransitoria } from '@nextdocs/adaptadores';
+import { conexion, enTransaccion } from '@nextdocs/db';
 import {
   PLANTILLAS_BASE,
   decidir,
@@ -19,7 +19,7 @@ import {
   type EstadoDocumento,
   type ObjetoNegocio,
   type Plantilla,
-} from '@docvance/dominio';
+} from '@nextdocs/dominio';
 
 import { SISTEMA, auditar, encolarEvento } from './auditoria.js';
 import { verificarContraArca } from './fiscal.js';
@@ -394,8 +394,8 @@ export async function procesarDocumento(
       [
         corridaId, documento.inquilino_id, documento.id, plantilla.codigo, plantilla.version,
         extraccion.uso.proveedor, extraccion.uso.modelo,
-        `docvance.extraccion.v1.${plantilla.codigo}.${plantilla.version}`,
-        'docvance.esquema.v1', iniciadoEn, terminadoEn,
+        `nextdocs_documental.extraccion.v1.${plantilla.codigo}.${plantilla.version}`,
+        'nextdocs_documental.esquema.v1', iniciadoEn, terminadoEn,
         terminadoEn.getTime() - iniciadoEn.getTime(), JSON.stringify(extraccion.uso),
       ],
     );

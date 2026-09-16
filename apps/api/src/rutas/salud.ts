@@ -1,6 +1,6 @@
 import type { FastifyInstance } from 'fastify';
 
-import { conexion } from '@docvance/db';
+import { conexion } from '@nextdocs/db';
 
 export async function rutasDeSalud(servidor: FastifyInstance): Promise<void> {
   servidor.get('/salud', async () => ({ estado: 'vivo', momento: new Date().toISOString() }));

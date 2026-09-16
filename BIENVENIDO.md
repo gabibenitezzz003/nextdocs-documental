@@ -10,7 +10,7 @@ con la IA, marcando de que parte del papel salio cada uno. Despues los valida,
 los asocia al pedido o al camion que corresponde, y avisa lo que necesita que
 alguien mire.
 
-Son dos piezas. **DocVance** es el motor: este repositorio, que expone una API.
+Son dos piezas. **NextDocs Documental** es el motor: este repositorio, que expone una API.
 **IA-Docs** es la pantalla, y vive adentro de Follow como un modulo mas.
 
 ## Antes de empezar
@@ -35,8 +35,8 @@ Pedilas antes del paso 3:**
 ### 1. Clonar e instalar
 
 ```bash
-git clone https://github.com/gabibenitezzz003/docvance-ai.git
-cd docvance-ai
+git clone https://github.com/gabibenitezzz003/nextdocs-documental.git
+cd nextdocs-documental
 corepack enable
 pnpm install
 ```
@@ -64,7 +64,7 @@ GEMINI_MODELO=gemini-3.6-flash
 pnpm infra:arriba
 ```
 
-Anduvo si `docker ps` muestra tres contenedores `docvance-*` en healthy.
+Anduvo si `docker ps` muestra tres contenedores `nextdocs-documental-*` en healthy.
 
 ### 4. Crear las tablas y los datos iniciales
 
@@ -152,7 +152,7 @@ necesita que un humano decida. El motivo esta en la solapa de Hallazgos.
 | PostgreSQL | 5433 | estado y bitacora de auditoria |
 | Redis | 6380 | la cola de procesamiento |
 | MinIO | 9100 | los archivos originales |
-| MinIO consola | 9101 | usuario y clave `docvance` / `docvance123` |
+| MinIO consola | 9101 | usuario y clave `nextdocs_documental` / `nextdocs_documental123` |
 
 Los puertos estan corridos a proposito para no chocar con otros proyectos.
 

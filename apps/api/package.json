@@ -1,5 +1,5 @@
 {
-  "name": "@docvance/api",
+  "name": "@nextdocs/api",
   "version": "0.1.0",
   "private": true,
   "type": "module",
@@ -13,11 +13,11 @@
     "test:integracion": "vitest run"
   },
   "dependencies": {
-    "@docvance/adaptadores": "workspace:*",
-    "@docvance/contratos": "workspace:*",
-    "@docvance/db": "workspace:*",
-    "@docvance/dominio": "workspace:*",
-    "@docvance/nucleo": "workspace:*",
+    "@nextdocs/adaptadores": "workspace:*",
+    "@nextdocs/contratos": "workspace:*",
+    "@nextdocs/db": "workspace:*",
+    "@nextdocs/dominio": "workspace:*",
+    "@nextdocs/nucleo": "workspace:*",
     "@fastify/cors": "^10.0.1",
     "@types/pg": "^8.11.10",
     "fastify": "^5.1.0",

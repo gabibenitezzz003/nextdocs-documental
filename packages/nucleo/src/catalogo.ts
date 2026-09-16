@@ -1,4 +1,4 @@
-import { conexion } from '@docvance/db';
+import { conexion } from '@nextdocs/db';
 import {
   claveComparacion,
   normalizarComprobante,
@@ -6,7 +6,7 @@ import {
   normalizarPatente,
   texto,
   type ObjetoNegocio,
-} from '@docvance/dominio';
+} from '@nextdocs/dominio';
 
 const MAXIMO_CANDIDATOS = 40;
 const MAXIMO_CLAVES = 60;

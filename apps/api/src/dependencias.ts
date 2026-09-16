@@ -2,7 +2,7 @@ import {
   almacenamientoDeEntorno,
   encolar,
   type Almacenamiento,
-} from '@docvance/adaptadores';
+} from '@nextdocs/adaptadores';
 
 export interface Dependencias {
   almacenamiento: Almacenamiento;

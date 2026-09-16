@@ -6,7 +6,7 @@ import {
   constatarComprobante,
   partirComprobante,
   type ResultadoConstatacion,
-} from '@docvance/adaptadores';
+} from '@nextdocs/adaptadores';
 import {
   hallazgo,
   normalizarCuit,
@@ -14,7 +14,7 @@ import {
   type Hallazgo,
   type Plantilla,
   type ValorExtraido,
-} from '@docvance/dominio';
+} from '@nextdocs/dominio';
 
 export interface VerificacionFiscal {
   intentada: boolean;

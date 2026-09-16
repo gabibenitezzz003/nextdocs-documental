@@ -1,7 +1,7 @@
 import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 
-import { conexion } from '@docvance/db';
+import { conexion } from '@nextdocs/db';
 
 import { exigirPermiso } from '../contexto.js';
 import { ErrorApi, noEncontrado } from '../problemas.js';

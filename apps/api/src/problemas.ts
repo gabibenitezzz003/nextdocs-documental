@@ -1,7 +1,7 @@
 import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
 import { ZodError } from 'zod';
 
-import { CODIGOS_ERROR, type CodigoError, type ProblemaHttp } from '@docvance/contratos';
+import { CODIGOS_ERROR, type CodigoError, type ProblemaHttp } from '@nextdocs/contratos';
 
 const TITULOS: Record<string, string> = {
   DOCUMENTO_NO_ENCONTRADO: 'El documento no existe',
@@ -53,7 +53,7 @@ export function noEncontrado(detalle: string): ErrorApi {
 
 function armarProblema(codigo: string, detalle: string, correlacionId: string, instancia: string): ProblemaHttp {
   return {
-    tipo: `https://docvance.ai/problemas/${codigo.toLowerCase()}`,
+    tipo: `https://nextdocsia.fenixgroup.tech/problemas/${codigo.toLowerCase()}`,
     titulo: TITULOS[codigo] ?? TITULOS['ERROR_INTERNO'] ?? 'Error',
     estado: ESTADOS[codigo] ?? 500,
     detalle,

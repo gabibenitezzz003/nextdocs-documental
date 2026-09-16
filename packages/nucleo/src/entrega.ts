@@ -1,7 +1,7 @@
 import { createHmac } from 'node:crypto';
 
-import { conexion, enTransaccion } from '@docvance/db';
-import type { SobreEvento } from '@docvance/contratos';
+import { conexion, enTransaccion } from '@nextdocs/db';
+import type { SobreEvento } from '@nextdocs/contratos';
 
 export interface ResultadoEntrega {
   eventoId: string;
@@ -99,10 +99,10 @@ export async function entregarEvento(
   for (const suscripcion of interesadas) {
     const encabezados = {
       'content-type': 'application/json',
-      'x-docvance-evento': evento.tipo_evento,
-      'x-docvance-evento-id': evento.id,
-      'x-docvance-marca-tiempo': marca,
-      'x-docvance-firma': firmar(suscripcion.secreto, marca, cuerpo),
+      'x-nextdocs-documental-evento': evento.tipo_evento,
+      'x-nextdocs-documental-evento-id': evento.id,
+      'x-nextdocs-documental-marca-tiempo': marca,
+      'x-nextdocs-documental-firma': firmar(suscripcion.secreto, marca, cuerpo),
       'idempotency-key': evento.id,
     };
 

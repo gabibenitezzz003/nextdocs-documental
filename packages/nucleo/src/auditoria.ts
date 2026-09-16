@@ -1,7 +1,7 @@
 import type { PoolClient } from 'pg';
 import { randomUUID } from 'node:crypto';
 
-import type { TipoEvento } from '@docvance/contratos';
+import type { TipoEvento } from '@nextdocs/contratos';
 
 export interface Actor {
   tipo: 'USUARIO' | 'SISTEMA' | 'API' | 'EXTERNO';

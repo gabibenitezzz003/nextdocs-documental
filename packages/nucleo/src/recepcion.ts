@@ -1,14 +1,14 @@
 import { createHash, randomUUID } from 'node:crypto';
 
-import type { Almacenamiento } from '@docvance/adaptadores';
+import type { Almacenamiento } from '@nextdocs/adaptadores';
 import {
   NOMBRE_COLA_PROCESAMIENTO,
   claveAlmacen,
   inspeccionar,
   type CargarDocumento,
   type RespuestaCarga,
-} from '@docvance/contratos';
-import { enTransaccion } from '@docvance/db';
+} from '@nextdocs/contratos';
+import { enTransaccion } from '@nextdocs/db';
 
 import { SISTEMA, auditar, encolarEvento, type Actor } from './auditoria.js';
 

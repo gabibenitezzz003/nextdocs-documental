@@ -10,7 +10,7 @@ Dos flujos nuevos que conectan la conversación de WhatsApp con IA-Docs.
 ## Por qué no reimplementamos el pipeline en n8n
 
 `DV01_RECEPCION`, `DV02_INTELIGENCIA` y `DV03_ENTREGA` hacen lo mismo que ahora
-hace la API de DocVance, pero sin transacciones, sin máquina de estados, sin
+hace la API de NextDocs Documental, pero sin transacciones, sin máquina de estados, sin
 bitácora y sin instantánea inmutable. **Quedaron desactivados.**
 
 El reparto es este:
@@ -83,12 +83,12 @@ no está configurada, el nodo falla en vez de caer en `panel.followlsn.com`.
 Esto no era así: los flujos tenían la URL de producción como valor por defecto,
 así que una prueba local podía mandarle un WhatsApp real a un chofer real.
 
-En local, el compose apunta al simulador de la API de DocVance:
+En local, el compose apunta al simulador de la API de NextDocs Documental:
 
 ```
 FOLLOW_WHATSAPP_URL=http://host.docker.internal:4000/api/v1/simulador/whatsapp
 IA_DOCS_URL=http://host.docker.internal:4000
-IA_DOCS_CLAVE=dvk_demo_...
+IA_DOCS_CLAVE=ndk_demo_...
 ```
 
 Los mensajes simulados quedan en el log de la API, no salen a ningún lado.

@@ -7,12 +7,12 @@ import {
   type ChoferFollow,
   type PedidoFollow,
   type VehiculoFollow,
-} from '@docvance/adaptadores';
+} from '@nextdocs/adaptadores';
 import {
   normalizarPatente,
   texto,
   type ObjetoNegocio,
-} from '@docvance/dominio';
+} from '@nextdocs/dominio';
 
 import { buscarObjetosDeNegocio } from './catalogo.js';
 

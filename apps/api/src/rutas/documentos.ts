@@ -6,16 +6,16 @@ import {
   esquemaConfirmarEmparejamiento,
   esquemaListado,
   esquemaRevision,
-} from '@docvance/contratos';
+} from '@nextdocs/contratos';
 import {
   DocumentoInexistente,
   RevisionInvalida,
   confirmarEmparejamiento,
   recibirDocumento,
   revisarDocumento,
-} from '@docvance/nucleo';
-import { NOMBRE_COLA_PROCESAMIENTO } from '@docvance/contratos';
-import { TransicionInvalida } from '@docvance/dominio';
+} from '@nextdocs/nucleo';
+import { NOMBRE_COLA_PROCESAMIENTO } from '@nextdocs/contratos';
+import { TransicionInvalida } from '@nextdocs/dominio';
 
 import { exigirPermiso } from '../contexto.js';
 import { bandeja, bitacora, ficha, resumenPorEstado } from '../consultas.js';

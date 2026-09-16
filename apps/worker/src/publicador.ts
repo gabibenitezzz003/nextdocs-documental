@@ -1,4 +1,4 @@
-import { entregarEvento, eventosPendientes } from '@docvance/nucleo';
+import { entregarEvento, eventosPendientes } from '@nextdocs/nucleo';
 
 const TIEMPO_LIMITE_MS = 10_000;
 

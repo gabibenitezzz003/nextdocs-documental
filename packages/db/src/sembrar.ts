@@ -1,15 +1,15 @@
 import { createHash } from 'node:crypto';
 
-import { PLANTILLAS_BASE } from '@docvance/dominio';
+import { PLANTILLAS_BASE } from '@nextdocs/dominio';
 
 import { cerrar, enTransaccion } from './conexion.js';
 
 const INQUILINO_DEMO = '11111111-1111-1111-1111-111111111111';
 
-const CLAVE_API_DEMO_POR_DEFECTO = 'dvk_demo_4f2a9c7b1e6d8035a1c4b9e2f7d60831';
+const CLAVE_API_DEMO_POR_DEFECTO = 'ndk_demo_4f2a9c7b1e6d8035a1c4b9e2f7d60831';
 
 export function claveApiDemo(): string {
-  const configurada = process.env['DOCVANCE_API_KEY']?.trim();
+  const configurada = process.env['NEXTDOCS_DOCUMENTAL_API_KEY']?.trim();
   return configurada || CLAVE_API_DEMO_POR_DEFECTO;
 }
 

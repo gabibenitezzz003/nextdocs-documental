@@ -1,5 +1,5 @@
 {
-  "name": "docvance-ai",
+  "name": "nextdocs-documental",
   "private": true,
   "type": "module",
   "packageManager": "pnpm@9.12.0",
@@ -13,15 +13,15 @@
     "typecheck": "turbo run typecheck",
     "test": "turbo run test",
     "test:integracion": "turbo run test:integracion",
-    "db:migrar": "pnpm --filter @docvance/db migrar",
-    "db:sembrar": "pnpm --filter @docvance/db sembrar",
+    "db:migrar": "pnpm --filter @nextdocs/db migrar",
+    "db:sembrar": "pnpm --filter @nextdocs/db sembrar",
     "infra:arriba": "docker compose -f infra/docker/docker-compose.yml up -d",
     "infra:abajo": "docker compose -f infra/docker/docker-compose.yml down",
     "infra:limpiar": "docker compose -f infra/docker/docker-compose.yml down -v",
-    "api": "pnpm --filter @docvance/api inicio",
-    "worker": "pnpm --filter @docvance/worker inicio",
-    "db:limpiar": "pnpm --filter @docvance/db limpiar",
-    "db:vaciar": "pnpm --filter @docvance/db limpiar -- --catalogo --destinatarios"
+    "api": "pnpm --filter @nextdocs/api inicio",
+    "worker": "pnpm --filter @nextdocs/worker inicio",
+    "db:limpiar": "pnpm --filter @nextdocs/db limpiar",
+    "db:vaciar": "pnpm --filter @nextdocs/db limpiar -- --catalogo --destinatarios"
   },
   "devDependencies": {
     "@types/node": "^22.7.5",

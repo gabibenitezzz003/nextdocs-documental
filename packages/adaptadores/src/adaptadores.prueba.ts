@@ -11,7 +11,7 @@ import { almacenamientoDeEntorno, motorDeEntorno } from './fabricas.js';
 import { MotorGemini } from './motorGemini.js';
 import { MotorSimulado } from './motorSimulado.js';
 import { limpiarGuiones, registrarGuion } from './motorSimulado.js';
-import { REMITO } from '@docvance/dominio';
+import { REMITO } from '@nextdocs/dominio';
 import { createHash } from 'node:crypto';
 
 const entornoOriginal = { ...process.env };

@@ -1,5 +1,5 @@
-import { cerrar } from '@docvance/db';
-import { cerrarColas, cerrarRedis } from '@docvance/adaptadores';
+import { cerrar } from '@nextdocs/db';
+import { cerrarColas, cerrarRedis } from '@nextdocs/adaptadores';
 
 import { configuracion } from './configuracion.js';
 import { armarServidor } from './servidor.js';

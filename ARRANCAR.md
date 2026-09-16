@@ -10,10 +10,10 @@ cp .env.ejemplo .env
 
 En `.env` poné al menos `PROVEEDOR_IA=gemini` y tu `GOOGLE_API_KEY` si querés procesar documentos reales.
 
-DocVance mantiene autenticación también en desarrollo. Definí una clave local propia:
+NextDocs Documental mantiene autenticación también en desarrollo. Definí una clave local propia:
 
 ```env
-DOCVANCE_API_KEY=dvk_local_tu_clave_segura
+NEXTDOCS_DOCUMENTAL_API_KEY=ndk_local_tu_clave_segura
 ```
 
 `pnpm db:sembrar` registra la huella de esa clave en PostgreSQL. La clave nunca se guarda en texto plano en la base.
@@ -32,7 +32,7 @@ Base de datos:
 pnpm db:migrar && pnpm db:sembrar
 ```
 
-Si cambiaste `DOCVANCE_API_KEY`, volvé a ejecutar `pnpm db:sembrar` para registrar la nueva credencial.
+Si cambiaste `NEXTDOCS_DOCUMENTAL_API_KEY`, volvé a ejecutar `pnpm db:sembrar` para registrar la nueva credencial.
 
 API y worker, cada uno en su terminal:
 
@@ -52,7 +52,7 @@ pnpm worker
 | Buzón de correo | `docker compose -f ../follow-docker/correo-local/docker-compose.yml up -d` | http://localhost:8025 |
 | Redis de Follow | `docker compose -f ../follow-docker/redis-local/docker-compose.yml up -d` | http://localhost:5540 |
 
-### Llamar DocVance desde n8n en Docker
+### Llamar NextDocs Documental desde n8n en Docker
 
 No uses `http://localhost:4000` desde un nodo HTTP de n8n: dentro del contenedor `localhost` apunta al propio contenedor.
 
@@ -65,10 +65,10 @@ http://host.docker.internal:4000/api/v1/documentos
 con el header:
 
 ```text
-Authorization: Bearer <valor de DOCVANCE_API_KEY>
+Authorization: Bearer <valor de NEXTDOCS_DOCUMENTAL_API_KEY>
 ```
 
-Podés conservar `Idempotency-Key`; DocVance lo usa para hacer los reintentos seguros.
+Podés conservar `Idempotency-Key`; NextDocs Documental lo usa para hacer los reintentos seguros.
 
 ## La interfaz
 
@@ -88,13 +88,13 @@ curl http://localhost:4000/listo
 ```
 
 ```bash
-curl http://localhost:4000/api/v1/vencimientos?dias=30 -H "Authorization: Bearer $DOCVANCE_API_KEY"
+curl http://localhost:4000/api/v1/vencimientos?dias=30 -H "Authorization: Bearer $NEXTDOCS_DOCUMENTAL_API_KEY"
 ```
 
 En PowerShell:
 
 ```powershell
-curl.exe http://localhost:4000/api/v1/vencimientos?dias=30 -H "Authorization: Bearer $env:DOCVANCE_API_KEY"
+curl.exe http://localhost:4000/api/v1/vencimientos?dias=30 -H "Authorization: Bearer $env:NEXTDOCS_DOCUMENTAL_API_KEY"
 ```
 
 La documentación de la API está en http://localhost:4000/documentacion
@@ -109,7 +109,7 @@ Las de integración van contra una base aparte que se crea sola, y se niegan a
 correr si no termina en `_pruebas`:
 
 ```bash
-pnpm --filter @docvance/nucleo test:integracion
+pnpm --filter @nextdocs/nucleo test:integracion
 ```
 
 ## Vaciar el modulo

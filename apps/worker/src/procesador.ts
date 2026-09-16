@@ -6,13 +6,13 @@ import {
   motorDeEntorno,
   type Almacenamiento,
   type MotorDocumental,
-} from '@docvance/adaptadores';
+} from '@nextdocs/adaptadores';
 import {
   buscarObjetosCombinado,
   procesarDocumento,
   type DependenciasProcesamiento,
   type ResultadoProcesamiento,
-} from '@docvance/nucleo';
+} from '@nextdocs/nucleo';
 
 export interface TrabajoProcesamiento {
   documentoId: string;
