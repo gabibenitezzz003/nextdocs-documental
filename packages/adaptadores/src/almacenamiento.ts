@@ -24,8 +24,15 @@ export class AlmacenamientoS3 implements Almacenamiento {
     const secreto = configuracion?.secreto ?? process.env['ALMACENAMIENTO_SECRETO'];
     this.balde = configuracion?.balde ?? process.env['ALMACENAMIENTO_BALDE'] ?? 'nextdocs-documental-documentos';
 
-    if (!endpoint || !clave || !secreto) {
-      throw new Error('Falta configurar el almacenamiento: endpoint, clave y secreto.');
+    if (!endpoint) {
+      this.cliente = new S3Client({
+        region: configuracion?.region ?? process.env['ALMACENAMIENTO_REGION'] ?? 'us-east-1',
+      });
+      return;
+    }
+
+    if (!clave || !secreto) {
+      throw new Error('Falta configurar el almacenamiento: clave y secreto.');
     }
 
     this.cliente = new S3Client({
