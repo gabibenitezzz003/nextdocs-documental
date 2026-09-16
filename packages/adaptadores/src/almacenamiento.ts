@@ -12,17 +12,22 @@ export class AlmacenamientoS3 implements Almacenamiento {
 
   private readonly balde: string;
 
+  private readonly prefijo: string;
+
   constructor(configuracion?: {
     endpoint?: string;
     clave?: string;
     secreto?: string;
     balde?: string;
+    prefijo?: string;
     region?: string;
   }) {
     const endpoint = configuracion?.endpoint ?? process.env['ALMACENAMIENTO_ENDPOINT'];
     const clave = configuracion?.clave ?? process.env['ALMACENAMIENTO_CLAVE'];
     const secreto = configuracion?.secreto ?? process.env['ALMACENAMIENTO_SECRETO'];
     this.balde = configuracion?.balde ?? process.env['ALMACENAMIENTO_BALDE'] ?? 'nextdocs-documental-documentos';
+    const prefijo = configuracion?.prefijo ?? process.env['ALMACENAMIENTO_PREFIJO'] ?? '';
+    this.prefijo = prefijo ? prefijo.replace(/\/?$/, '/') : '';
 
     if (!endpoint) {
       this.cliente = new S3Client({
@@ -46,7 +51,7 @@ export class AlmacenamientoS3 implements Almacenamiento {
   async guardar(clave: string, contenido: Buffer, tipoMime: string): Promise<void> {
     await this.cliente.send(new PutObjectCommand({
       Bucket: this.balde,
-      Key: clave,
+      Key: this.prefijo + clave,
       Body: contenido,
       ContentType: tipoMime,
     }));
@@ -55,7 +60,7 @@ export class AlmacenamientoS3 implements Almacenamiento {
   async leer(clave: string): Promise<Buffer> {
     const respuesta = await this.cliente.send(new GetObjectCommand({
       Bucket: this.balde,
-      Key: clave,
+      Key: this.prefijo + clave,
     }));
     const cuerpo = respuesta.Body;
     if (!cuerpo) throw new Error(`El objeto ${clave} vino vacio.`);
@@ -67,7 +72,7 @@ export class AlmacenamientoS3 implements Almacenamiento {
   async urlFirmada(clave: string, segundos = 300): Promise<string> {
     return getSignedUrl(
       this.cliente,
-      new GetObjectCommand({ Bucket: this.balde, Key: clave }),
+      new GetObjectCommand({ Bucket: this.balde, Key: this.prefijo + clave }),
       { expiresIn: segundos },
     );
   }
