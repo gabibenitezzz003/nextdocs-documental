@@ -73,7 +73,7 @@ export function textoDeCorreo(contenido: ContenidoCorreo): string {
     for (const h of contenido.hallazgos) lineas.push(`  [${h.severidad}] ${h.mensaje}`);
   }
 
-  if (contenido.enlace) lineas.push('', `Ver en IA-Docs: ${contenido.enlace}`);
+  if (contenido.enlace) lineas.push('', `Ver en NEXT DOC AI: ${contenido.enlace}`);
   if (contenido.piePersonalizado) lineas.push('', contenido.piePersonalizado);
 
   return lineas.join('\n');
@@ -86,10 +86,10 @@ export function htmlDeCorreo(contenido: ContenidoCorreo): string {
     .map(
       (dato) => `
         <tr>
-          <td style="padding:8px 0;color:#64748b;font-size:13px;width:42%;vertical-align:top">
+          <td style="padding:9px 0;color:#667085;font-size:13px;width:42%;vertical-align:top;border-bottom:1px solid #f1f3f7">
             ${escapar(dato.etiqueta)}
           </td>
-          <td style="padding:8px 0;color:#0f172a;font-size:14px;font-weight:600">
+          <td style="padding:9px 0;color:#111827;font-size:14px;font-weight:600;border-bottom:1px solid #f1f3f7">
             ${escapar(dato.valor)}
           </td>
         </tr>`,
@@ -99,17 +99,17 @@ export function htmlDeCorreo(contenido: ContenidoCorreo): string {
   const bloqueHallazgos = contenido.hallazgos.length
     ? `
       <div style="margin-top:24px">
-        <div style="font-size:12px;font-weight:700;color:#64748b;letter-spacing:.04em;text-transform:uppercase;margin-bottom:10px">
+        <div style="font-size:11px;font-weight:700;color:#667085;letter-spacing:.08em;text-transform:uppercase;margin-bottom:10px">
           Para revisar
         </div>
         ${contenido.hallazgos
           .map(
             (h) => `
-          <div style="border-left:3px solid ${TONOS_SEVERIDAD[h.severidad] ?? '#94a3b8'};background:#f8fafc;padding:10px 12px;margin-bottom:8px;border-radius:0 4px 4px 0">
-            <div style="font-size:11px;font-weight:700;color:${TONOS_SEVERIDAD[h.severidad] ?? '#64748b'};text-transform:uppercase;letter-spacing:.04em">
+          <div style="border-left:3px solid ${TONOS_SEVERIDAD[h.severidad] ?? '#98a2b3'};background:#f8fafc;padding:10px 14px;margin-bottom:8px;border-radius:0 6px 6px 0">
+            <div style="font-size:11px;font-weight:700;color:${TONOS_SEVERIDAD[h.severidad] ?? '#667085'};text-transform:uppercase;letter-spacing:.06em">
               ${escapar(h.severidad)}
             </div>
-            <div style="font-size:13px;color:#334155;margin-top:2px">${escapar(h.mensaje)}</div>
+            <div style="font-size:13px;color:#344054;margin-top:3px;line-height:1.45">${escapar(h.mensaje)}</div>
           </div>`,
           )
           .join('')}
@@ -118,11 +118,12 @@ export function htmlDeCorreo(contenido: ContenidoCorreo): string {
 
   const boton = contenido.enlace
     ? `
-      <div style="margin-top:28px">
+      <div style="margin-top:30px;text-align:center">
         <a href="${escapar(contenido.enlace)}"
-           style="display:inline-block;background:#ea580c;color:#ffffff;text-decoration:none;
-                  padding:11px 22px;border-radius:6px;font-size:14px;font-weight:600">
-          Ver el documento
+           style="display:inline-block;background:#6c36ff;color:#ffffff;text-decoration:none;
+                  padding:12px 30px;border-radius:8px;font-size:14px;font-weight:700;
+                  letter-spacing:.01em">
+          Abrir en NEXT DOC AI
         </a>
       </div>`
     : '';
@@ -130,58 +131,79 @@ export function htmlDeCorreo(contenido: ContenidoCorreo): string {
   return `<!doctype html>
 <html lang="es">
 <head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
-<body style="margin:0;padding:24px;background:#f1f5f9;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Arial,sans-serif">
-  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:600px;margin:0 auto">
-    <tr><td>
-      <div style="background:#ffffff;border:1px solid #c1ccd7;border-radius:8px;overflow:hidden">
+<body style="margin:0;padding:0;background:#eef1f6;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Arial,sans-serif">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#eef1f6;padding:32px 12px">
+    <tr><td align="center">
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:600px">
+        <tr><td>
+          <div style="background:#ffffff;border-radius:12px;overflow:hidden;box-shadow:0 2px 12px rgba(13,15,18,.08)">
 
-        <div style="background:#0f172a;padding:18px 24px">
-          <div style="color:#ffffff;font-size:17px;font-weight:700;letter-spacing:-.01em">IA-Docs</div>
-          <div style="color:#94a3b8;font-size:12px;margin-top:2px">Del documento a la accion</div>
-        </div>
+            <div style="height:5px;background:linear-gradient(90deg,#6c36ff 0%,#a44dff 45%,#ff1e1e 100%)"></div>
 
-        <div style="padding:24px">
-          <div style="display:inline-block;background:${tono}1a;color:${tono};font-size:11px;
-                      font-weight:700;padding:4px 10px;border-radius:4px;text-transform:uppercase;
-                      letter-spacing:.04em">
-            ${escapar(contenido.estado)}
-          </div>
-
-          <h1 style="margin:14px 0 6px;font-size:20px;color:#0f172a;font-weight:700;line-height:1.3">
-            ${escapar(contenido.titulo)}
-          </h1>
-          <p style="margin:0;color:#475569;font-size:14px;line-height:1.55">
-            ${escapar(contenido.bajada)}
-          </p>
-
-          <div style="margin-top:22px;padding:14px 16px;background:#f8fafc;border-radius:6px;
-                      border:1px solid #e2e8f0">
-            <div style="font-size:14px;font-weight:700;color:#0f172a">
-              ${escapar(contenido.documento)}
+            <div style="background:#0d0f12;padding:22px 28px">
+              <table role="presentation" cellpadding="0" cellspacing="0"><tr>
+                <td style="vertical-align:middle">
+                  <img src="cid:logoMarca" alt="NEXT DOC AI" width="150"
+                       style="display:block;height:auto;border:0">
+                </td>
+              </tr></table>
+              <div style="color:#8a93a6;font-size:12px;margin-top:10px;letter-spacing:.02em">
+                Inteligencia documental &middot; del documento a la acci&oacute;n
+              </div>
             </div>
-            <div style="font-size:12px;color:#64748b;margin-top:3px">
-              ${escapar(contenido.tipo)}${contenido.confianza ? ` &middot; confianza ${escapar(contenido.confianza)}` : ''}${contenido.asociadoA ? ` &middot; ${escapar(contenido.asociadoA)}` : ''}
+
+            <div style="padding:28px">
+              <div style="display:inline-block;background:${tono}1a;color:${tono};font-size:11px;
+                          font-weight:700;padding:5px 12px;border-radius:5px;text-transform:uppercase;
+                          letter-spacing:.06em">
+                ${escapar(contenido.estado)}
+              </div>
+
+              <h1 style="margin:16px 0 6px;font-size:21px;color:#0d0f12;font-weight:700;line-height:1.3;letter-spacing:-.01em">
+                ${escapar(contenido.titulo)}
+              </h1>
+              <p style="margin:0;color:#475569;font-size:14px;line-height:1.6">
+                ${escapar(contenido.bajada)}
+              </p>
+
+              <div style="margin-top:24px;padding:16px 18px;background:#f7f9fc;border-radius:8px;
+                          border:1px solid #e2e7ef">
+                <table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr>
+                  <td style="vertical-align:middle">
+                    <div style="font-size:14px;font-weight:700;color:#0d0f12;word-break:break-all">
+                      ${escapar(contenido.documento)}
+                    </div>
+                    <div style="font-size:12px;color:#667085;margin-top:4px">
+                      ${escapar(contenido.tipo)}${contenido.confianza ? ` &middot; confianza ${escapar(contenido.confianza)}` : ''}${contenido.asociadoA ? ` &middot; ${escapar(contenido.asociadoA)}` : ''}
+                    </div>
+                  </td>
+                </tr></table>
+              </div>
+
+              ${filasDatos
+                ? `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-top:22px">
+                     ${filasDatos}
+                   </table>`
+                : ''}
+
+              ${bloqueHallazgos}
+              ${boton}
             </div>
+
+            <div style="border-top:1px solid #e9edf3;padding:18px 28px;background:#f9fafc">
+              <div style="font-size:11px;color:#98a2b3;line-height:1.6">
+                ${contenido.piePersonalizado ? `${escapar(contenido.piePersonalizado)}<br>` : ''}
+                Este correo lo gener&oacute; NEXT DOC AI autom&aacute;ticamente.
+                El documento original queda archivado y disponible en el sistema de tu organizaci&oacute;n.
+              </div>
+            </div>
+
           </div>
-
-          ${filasDatos
-            ? `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-top:20px">
-                 ${filasDatos}
-               </table>`
-            : ''}
-
-          ${bloqueHallazgos}
-          ${boton}
-        </div>
-
-        <div style="border-top:1px solid #e2e8f0;padding:14px 24px;background:#f8fafc">
-          <div style="font-size:11px;color:#94a3b8;line-height:1.5">
-            ${contenido.piePersonalizado ? `${escapar(contenido.piePersonalizado)}<br>` : ''}
-            Este correo lo genero IA-Docs automaticamente. El documento original queda archivado en el sistema.
+          <div style="text-align:center;padding:18px 0 4px;font-size:11px;color:#98a2b3">
+            NEXT DOC AI &middot; nextdocsia.fenixgroup.tech
           </div>
-        </div>
-
-      </div>
+        </td></tr>
+      </table>
     </td></tr>
   </table>
 </body>

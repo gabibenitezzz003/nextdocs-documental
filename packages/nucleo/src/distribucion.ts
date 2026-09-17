@@ -11,6 +11,7 @@ import {
 import { conexion, enTransaccion } from '@nextdocs/db';
 
 import { SISTEMA, auditar } from './auditoria.js';
+import { LOGO_MARCA_PNG } from './logoMarca.js';
 import {
   asuntoDeCorreo,
   htmlDeCorreo,
@@ -175,7 +176,7 @@ async function armarContenido(envio: FilaEnvio): Promise<ContenidoCorreo> {
     POR_VENCER: 'La vigencia de este documento esta por terminar.',
   };
 
-  const base = process.env['IA_DOCS_URL_PUBLICA'] ?? null;
+  const base = process.env['NEXTDOCS_URL_PUBLICA'] ?? process.env['IA_DOCS_URL_PUBLICA'] ?? null;
 
   return {
     titulo: titulos[envio.motivo] ?? 'Documento procesado',
@@ -193,7 +194,7 @@ async function armarContenido(envio: FilaEnvio): Promise<ContenidoCorreo> {
       .slice(0, 6)
       .map((h) => ({ codigo: h.codigo, severidad: h.severidad, mensaje: h.mensaje })),
     asociadoA: envio.sujeto_id ? `${envio.sujeto_tipo} ${envio.sujeto_id}` : null,
-    enlace: base ? `${base.replace(/\/+$/, '')}/carga/ia-docs` : null,
+    enlace: base ? `${base.replace(/\/+$/, '')}/documental` : null,
     piePersonalizado: null,
   };
 }
@@ -218,7 +219,14 @@ export async function despacharEnvios(
     try {
       const contenido = await armarContenido(envio);
 
-      const adjuntos: Adjunto[] = [];
+      const adjuntos: Adjunto[] = [
+        {
+          nombre: 'logo.png',
+          contenido: LOGO_MARCA_PNG,
+          tipoMime: 'image/png',
+          cid: 'logoMarca',
+        },
+      ];
       try {
         const original = await almacenamiento.leer(envio.clave_almacen);
         if (original.length <= MAXIMO_ADJUNTO_BYTES) {
@@ -229,7 +237,7 @@ export async function despacharEnvios(
           });
         }
       } catch {
-        adjuntos.length = 0;
+        adjuntos.length = 1;
       }
 
       await enviarCorreo({

@@ -76,6 +76,7 @@ export interface Adjunto {
   nombre: string;
   contenido: Buffer;
   tipoMime: string;
+  cid?: string;
 }
 
 export interface CorreoASalir {
@@ -105,6 +106,7 @@ export async function enviarCorreo(
         filename: a.nombre,
         content: a.contenido,
         contentType: a.tipoMime,
+        ...(a.cid ? { cid: a.cid } : {}),
       })),
     });
 
