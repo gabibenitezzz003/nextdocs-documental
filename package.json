@@ -12,7 +12,7 @@
     "lint": "turbo run lint",
     "typecheck": "turbo run typecheck",
     "test": "turbo run test",
-    "test:integracion": "turbo run test:integracion",
+    "test:integracion": "turbo run test:integracion --concurrency=1",
     "db:migrar": "pnpm --filter @nextdocs/db migrar",
     "db:sembrar": "pnpm --filter @nextdocs/db sembrar",
     "infra:arriba": "docker compose -f infra/docker/docker-compose.yml up -d",
