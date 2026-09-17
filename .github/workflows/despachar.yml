@@ -1,0 +1,20 @@
+name: Despachar deploy del motor documental
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  despachar:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Avisar al core que el motor documental cambio
+        run: |
+          curl -fsS -X POST \
+            -H "Authorization: Bearer $TOKEN" \
+            -H "Accept: application/vnd.github+json" \
+            https://api.github.com/repos/gabibenitezzz003/NEXTDOCS-IA/dispatches \
+            -d '{"event_type":"documental-actualizado"}'
+        env:
+          TOKEN: ${{ secrets.NEXTDOCS_DISPATCH_TOKEN }}
