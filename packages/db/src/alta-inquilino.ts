@@ -14,7 +14,7 @@ async function main(): Promise<void> {
 
   await provisionarInquilino(inquilinoId, nombre, claveApi);
 
-  console.log(`inquilino ${nombre} (${inquilinoId}) listo`);
+  process.stdout.write(`inquilino ${nombre} (${inquilinoId}) listo\n`);
 }
 
 await main().finally(() => cerrar());
