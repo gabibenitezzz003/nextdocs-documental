@@ -43,6 +43,7 @@ const RUTAS_ABIERTAS = new Set([
   '/documentacion',
   '/api/v1/simulador/erp',
   '/api/v1/simulador/whatsapp',
+  '/api/v1/admin/inquilinos',
 ]);
 
 function credencialDe(pedido: FastifyRequest): string | null {

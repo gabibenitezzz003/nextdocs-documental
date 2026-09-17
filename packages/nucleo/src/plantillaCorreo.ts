@@ -116,17 +116,7 @@ export function htmlDeCorreo(contenido: ContenidoCorreo): string {
       </div>`
     : '';
 
-  const boton = contenido.enlace
-    ? `
-      <div style="margin-top:30px;text-align:center">
-        <a href="${escapar(contenido.enlace)}"
-           style="display:inline-block;background:#6c36ff;color:#ffffff;text-decoration:none;
-                  padding:12px 30px;border-radius:8px;font-size:14px;font-weight:700;
-                  letter-spacing:.01em">
-          Abrir en NEXT DOC AI
-        </a>
-      </div>`
-    : '';
+  const boton = '';
 
   return `<!doctype html>
 <html lang="es">
