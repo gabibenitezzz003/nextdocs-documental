@@ -1,5 +1,6 @@
 import type { Plantilla } from './tipos.js';
 import { CATALOGO_LEGAL } from './catalogo.js';
+import { CATALOGO_LOGISTICO } from './catalogoLogistico.js';
 
 export const REMITO: Plantilla = {
   codigo: 'REMITO',
@@ -95,7 +96,7 @@ export const NOTA_DEBITO: Plantilla = {
 };
 
 export const PLANTILLAS_BASE: Record<string, Plantilla> = Object.fromEntries(
-  [REMITO, FACTURA, NOTA_CREDITO, NOTA_DEBITO, ...CATALOGO_LEGAL].map((p) => [p.codigo, p]),
+  [REMITO, FACTURA, NOTA_CREDITO, NOTA_DEBITO, ...CATALOGO_LEGAL, ...CATALOGO_LOGISTICO].map((p) => [p.codigo, p]),
 );
 
 export function plantillaDe(codigo: string): Plantilla | null {
