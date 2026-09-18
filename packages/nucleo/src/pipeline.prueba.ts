@@ -817,3 +817,194 @@ describe('plantilla del correo', () => {
     expect(htmlDeCorreo({ ...contenido, enlace: null })).not.toContain('Ver el documento');
   });
 });
+
+describe('segmentacion de lotes multipagina', () => {
+  const PDF_3_PAGINAS = Buffer.from(
+    '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',
+    'base64',
+  );
+
+  const encoladosDivision: { nombre: string; clave: string; datos: Record<string, unknown> }[] = [];
+
+  const motorConSegmentos = (segmentos: { desde: number; hasta: number; tipo: string | null }[]) => ({
+    clasificar: motor.clasificar.bind(motor),
+    extraer: motor.extraer.bind(motor),
+    segmentar: async () => ({ segmentos }),
+  });
+
+  const motorQueFalla = () => ({
+    clasificar: motor.clasificar.bind(motor),
+    extraer: motor.extraer.bind(motor),
+    segmentar: async () => {
+      throw new Error('El motor de segmentacion no respondio.');
+    },
+  });
+
+  const dependenciasConDivision = (motorDivision: unknown) => ({
+    almacenamiento,
+    motor: motorDivision as typeof motor,
+    buscarObjetos: async () => catalogo,
+    encolar: async (nombre: string, clave: string, datos: Record<string, unknown>) => {
+      encoladosDivision.push({ nombre, clave, datos });
+    },
+  });
+
+  beforeAll(async () => {
+    await usarBaseDePruebas();
+    exigirBaseDePruebas();
+    await migrar();
+    await conexion().query(
+      `INSERT INTO inquilino (id, nombre) VALUES ($1, $2)
+       ON CONFLICT (id) DO NOTHING`,
+      [INQUILINO, 'Demo Logistics'],
+    );
+  });
+
+  afterAll(async () => {
+    await conexion().query('TRUNCATE inquilino CASCADE');
+    await cerrar();
+  });
+
+  beforeEach(async () => {
+    limpiarGuiones();
+    encolados.length = 0;
+    encoladosDivision.length = 0;
+    catalogo = [];
+    await conexion().query('DELETE FROM documento WHERE inquilino_id = $1', [INQUILINO]);
+    await conexion().query('DELETE FROM evento_salida WHERE inquilino_id = $1', [INQUILINO]);
+  });
+
+  it('un lote de 3 paginas se divide en hijos y el padre queda DIVIDIDO', async () => {
+    const carga = await cargar('lote-remitos.pdf', PDF_3_PAGINAS, { plantilla: null });
+    expect(carga.aceptado).toBe(true);
+
+    const resultado = await procesarDocumento(
+      carga.documentoId as string,
+      randomUUID(),
+      dependenciasConDivision(motorConSegmentos([
+        { desde: 1, hasta: 1, tipo: 'REMITO' },
+        { desde: 2, hasta: 2, tipo: 'REMITO' },
+        { desde: 3, hasta: 3, tipo: 'REMITO' },
+      ])),
+    );
+
+    expect(resultado.estado).toBe('DIVIDIDO');
+    expect(encoladosDivision).toHaveLength(3);
+
+    const { rows: hijos } = await conexion().query<{ estado: string; documento_padre_id: string }>(
+      'SELECT estado, documento_padre_id FROM documento WHERE documento_padre_id = $1 ORDER BY pagina_desde',
+      [carga.documentoId],
+    );
+    expect(hijos).toHaveLength(3);
+    expect(hijos.every((h) => h.estado === 'RECIBIDO')).toBe(true);
+  });
+
+  it('reprocesar el padre no duplica los hijos', async () => {
+    const carga = await cargar('lote-remitos.pdf', PDF_3_PAGINAS, { plantilla: null });
+    const deps = dependenciasConDivision(motorConSegmentos([
+      { desde: 1, hasta: 1, tipo: 'REMITO' },
+      { desde: 2, hasta: 2, tipo: 'REMITO' },
+      { desde: 3, hasta: 3, tipo: 'REMITO' },
+    ]));
+
+    await procesarDocumento(carga.documentoId as string, randomUUID(), deps);
+    encoladosDivision.length = 0;
+
+    const { rows: antes } = await conexion().query<{ total: string }>(
+      'SELECT count(*)::text AS total FROM documento WHERE documento_padre_id = $1',
+      [carga.documentoId],
+    );
+
+    await conexion().query("UPDATE documento SET estado = 'PROCESANDO' WHERE id = $1", [carga.documentoId]);
+    await procesarDocumento(carga.documentoId as string, randomUUID(), deps);
+
+    const { rows: despues } = await conexion().query<{ total: string }>(
+      'SELECT count(*)::text AS total FROM documento WHERE documento_padre_id = $1',
+      [carga.documentoId],
+    );
+
+    expect(despues[0]?.total).toBe(antes[0]?.total);
+    expect(encoladosDivision).toHaveLength(0);
+  });
+
+  it('un segmento con huella ya registrada no crea otro documento', async () => {
+    const { extraerPaginas } = await import('@nextdocs/adaptadores');
+    const segmentoRepetido = await extraerPaginas(PDF_3_PAGINAS, 1, 1);
+    const huellaRepetida = createHash('sha256').update(segmentoRepetido).digest('hex');
+
+    const idExistente = randomUUID();
+    await conexion().query(
+      `INSERT INTO documento
+         (id, inquilino_id, origen, huella, tipo_mime, nombre_archivo, estado)
+       VALUES ($1, $2, 'API', $3, 'application/pdf', 'segmento-viejo.pdf', 'APROBADO')`,
+      [idExistente, INQUILINO, huellaRepetida],
+    );
+
+    const carga = await cargar('lote-remitos.pdf', PDF_3_PAGINAS, { plantilla: null });
+    const resultado = await procesarDocumento(
+      carga.documentoId as string,
+      randomUUID(),
+      dependenciasConDivision(motorConSegmentos([
+        { desde: 1, hasta: 1, tipo: 'REMITO' },
+        { desde: 2, hasta: 2, tipo: 'REMITO' },
+        { desde: 3, hasta: 3, tipo: 'REMITO' },
+      ])),
+    );
+
+    expect(resultado.estado).toBe('DIVIDIDO');
+    expect(encoladosDivision).toHaveLength(2);
+
+    const { rows: hijos } = await conexion().query<{ total: string }>(
+      'SELECT count(*)::text AS total FROM documento WHERE documento_padre_id = $1',
+      [carga.documentoId],
+    );
+    expect(Number(hijos[0]?.total)).toBe(2);
+  });
+
+  it('si el motor de segmentacion falla el padre queda OBSERVADO y no se divide por pagina', async () => {
+    const carga = await cargar('lote-remitos.pdf', PDF_3_PAGINAS, { plantilla: null });
+
+    const resultado = await procesarDocumento(
+      carga.documentoId as string,
+      randomUUID(),
+      dependenciasConDivision(motorQueFalla()),
+    );
+
+    expect(resultado.estado).toBe('OBSERVADO');
+
+    const { rows: hijos } = await conexion().query<{ total: string }>(
+      'SELECT count(*)::text AS total FROM documento WHERE documento_padre_id = $1',
+      [carga.documentoId],
+    );
+    expect(Number(hijos[0]?.total)).toBe(0);
+  });
+
+  it('rechazar el padre dividido rechaza los hijos pendientes', async () => {
+    const { revisarDocumento } = await import('./revision.js');
+    const carga = await cargar('lote-remitos.pdf', PDF_3_PAGINAS, { plantilla: null });
+    await procesarDocumento(
+      carga.documentoId as string,
+      randomUUID(),
+      dependenciasConDivision(motorConSegmentos([
+        { desde: 1, hasta: 1, tipo: 'REMITO' },
+        { desde: 2, hasta: 3, tipo: 'REMITO' },
+      ])),
+    );
+
+    const resultado = await revisarDocumento({
+      inquilinoId: INQUILINO,
+      documentoId: carga.documentoId as string,
+      decision: 'RECHAZAR',
+      motivo: 'lote cargado por error',
+    });
+
+    expect(resultado.estado).toBe('RECHAZADO');
+
+    const { rows: pendientes } = await conexion().query<{ total: string }>(
+      `SELECT count(*)::text AS total FROM documento
+        WHERE documento_padre_id = $1 AND estado <> 'RECHAZADO'`,
+      [carga.documentoId],
+    );
+    expect(Number(pendientes[0]?.total)).toBe(0);
+  });
+});

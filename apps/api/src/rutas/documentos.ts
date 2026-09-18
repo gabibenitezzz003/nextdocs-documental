@@ -24,7 +24,7 @@ import { ErrorApi, noEncontrado } from '../problemas.js';
 
 const esquemaId = z.object({ id: z.string().uuid() });
 
-const ESTADOS_REPROCESABLES = ['RECIBIDO', 'OBSERVADO'];
+const ESTADOS_REPROCESABLES = ['RECIBIDO', 'OBSERVADO', 'PROCESANDO'];
 
 function traducir(error: unknown): never {
   if (error instanceof DocumentoInexistente) throw noEncontrado(error.message);
@@ -153,10 +153,32 @@ export async function rutasDeDocumentos(servidor: FastifyInstance): Promise<void
     if (!encontrada) throw noEncontrado(`No existe el documento ${id}.`);
 
     const estado = String(encontrada.documento['estado']);
+
+    if (estado === 'DIVIDIDO') {
+      const reencolables = (encontrada.hijos as Record<string, unknown>[])
+        .filter((hijo) => ESTADOS_REPROCESABLES.includes(String(hijo['estado'])));
+
+      for (const hijo of reencolables) {
+        await dependencias().encolar(
+          NOMBRE_COLA_PROCESAMIENTO,
+          `${hijo['id']}-${Date.now()}`,
+          {
+            documentoId: hijo['id'],
+            inquilinoId: pedido.contexto.inquilinoId,
+            correlacionId: pedido.correlacionId,
+            intento: 1,
+          },
+        );
+      }
+
+      respuesta.status(202);
+      return { reencolados: reencolables.length, correlacionId: pedido.correlacionId };
+    }
+
     if (!ESTADOS_REPROCESABLES.includes(estado)) {
       throw new ErrorApi(
         'TRANSICION_INVALIDA',
-        `Un documento en ${estado} no se puede reprocesar. Solo ${ESTADOS_REPROCESABLES.join(' o ')}.`,
+        `Un documento en ${estado} no se puede reprocesar. Solo ${ESTADOS_REPROCESABLES.join(' o ')} o un documento dividido con hijos pendientes.`,
       );
     }
 

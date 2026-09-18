@@ -240,17 +240,29 @@ export async function procesarDocumento(
   const posibles = await tiposDisponibles(documento.inquilino_id);
 
   if (dependencias.encolar) {
-    const division = await dividirSiHaceFalta(
-      documento,
-      contenido,
-      correlacionId,
-      {
-        almacenamiento: dependencias.almacenamiento,
-        motor: dependencias.motor,
-        encolar: dependencias.encolar,
-      },
-      posibles,
-    );
+    let division;
+    try {
+      division = await dividirSiHaceFalta(
+        documento,
+        contenido,
+        correlacionId,
+        {
+          almacenamiento: dependencias.almacenamiento,
+          motor: dependencias.motor,
+          encolar: dependencias.encolar,
+        },
+        posibles,
+      );
+    } catch (error) {
+      const e = error as ErrorMotorDocumental;
+      if (quedanReintentos(e.codigo)) throw new FallaTransitoria(e.codigo, e.message);
+      return observarPorFalla(
+        documento,
+        correlacionId,
+        e.codigo ?? 'SEGMENTACION_FALLIDA',
+        e.message,
+      );
+    }
 
     if (division.dividido) {
       documento.estado = 'DIVIDIDO';

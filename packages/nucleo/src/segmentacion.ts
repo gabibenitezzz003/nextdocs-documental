@@ -10,7 +10,8 @@ import {
   type Segmento,
 } from '@nextdocs/adaptadores';
 import { NOMBRE_COLA_PROCESAMIENTO, claveAlmacen } from '@nextdocs/contratos';
-import { enTransaccion } from '@nextdocs/db';
+import { ErrorMotorDocumental } from '@nextdocs/adaptadores';
+import { conexion, enTransaccion } from '@nextdocs/db';
 
 import { SISTEMA, auditar, encolarEvento, type Actor } from './auditoria.js';
 
@@ -20,6 +21,7 @@ export interface DocumentoADividir {
   tipo_mime: string;
   nombre_archivo: string;
   clave_almacen: string;
+  estado?: string;
   documento_padre_id?: string | null;
 }
 
@@ -48,19 +50,69 @@ async function decidirSegmentos(
 ): Promise<Segmento[]> {
   if (!motor.segmentar) return segmentosPorPagina(totalPaginas);
 
-  try {
-    const salida = await motor.segmentar({
-      contenido,
-      tipoMime,
-      totalPaginas,
-      plantillasPosibles,
-    });
-    if (salida.segmentos.length) return salida.segmentos;
-  } catch {
-    return segmentosPorPagina(totalPaginas);
+  const salida = await motor.segmentar({
+    contenido,
+    tipoMime,
+    totalPaginas,
+    plantillasPosibles,
+  });
+
+  if (!salida.segmentos.length) {
+    throw new ErrorMotorDocumental(
+      'SEGMENTACION_INCOMPLETA',
+      'El motor no devolvio una segmentacion valida para el documento.',
+    );
   }
 
-  return segmentosPorPagina(totalPaginas);
+  return salida.segmentos;
+}
+
+async function marcarDividido(
+  documento: DocumentoADividir,
+  hijos: ResultadoSegmentacion['hijos'],
+  correlacionId: string,
+  actor: Actor,
+): Promise<void> {
+  await enTransaccion(async (cliente) => {
+    await cliente.query(
+      'UPDATE documento SET estado = $1, actualizado_en = now() WHERE id = $2',
+      ['DIVIDIDO', documento.id],
+    );
+
+    await auditar(cliente, {
+      inquilinoId: documento.inquilino_id,
+      tipoAgregado: 'documento',
+      agregadoId: documento.id,
+      accion: 'ESTADO_DIVIDIDO',
+      actor,
+      origen: 'PIPELINE',
+      correlacionId,
+      antes: { estado: documento.estado ?? 'PROCESANDO' },
+      despues: { estado: 'DIVIDIDO', documentos: hijos.length },
+    });
+  });
+}
+
+async function hijosExistentes(documentoId: string): Promise<ResultadoSegmentacion['hijos']> {
+  const { rows } = await conexion().query<{
+    id: string;
+    pagina_desde: number;
+    pagina_hasta: number;
+    plantilla_codigo: string | null;
+  }>(
+    `SELECT id, pagina_desde, pagina_hasta, plantilla_codigo
+       FROM documento
+      WHERE documento_padre_id = $1
+      ORDER BY pagina_desde`,
+    [documentoId],
+  );
+
+  return rows.map((r) => ({
+    documentoId: r.id,
+    desde: r.pagina_desde,
+    hasta: r.pagina_hasta,
+    tipo: r.plantilla_codigo,
+  }));
 }
 
 export async function dividirSiHaceFalta(
@@ -77,6 +129,14 @@ export async function dividirSiHaceFalta(
 ): Promise<ResultadoSegmentacion> {
   if (documento.documento_padre_id) return SIN_DIVIDIR;
   if (!esPdf(documento.tipo_mime)) return SIN_DIVIDIR;
+
+  const previos = await hijosExistentes(documento.id);
+  if (previos.length) {
+    if (documento.estado !== 'DIVIDIDO') {
+      await marcarDividido(documento, previos, correlacionId, actor);
+    }
+    return { dividido: true, totalPaginas: 0, hijos: previos };
+  }
 
   let totalPaginas: number;
   try {
@@ -105,6 +165,21 @@ export async function dividirSiHaceFalta(
     const huella = createHash('sha256').update(recorte).digest('hex');
     const clave = claveAlmacen(documento.inquilino_id, hijoId, 'application/pdf');
 
+    const { rows: repetidos } = await conexion().query<{ id: string }>(
+      'SELECT id FROM documento WHERE inquilino_id = $1 AND huella = $2',
+      [documento.inquilino_id, huella],
+    );
+
+    if (repetidos.length) {
+      hijos.push({
+        documentoId: repetidos[0]!.id,
+        desde: segmento.desde,
+        hasta: segmento.hasta,
+        tipo: segmento.tipo,
+      });
+      continue;
+    }
+
     await dependencias.almacenamiento.guardar(clave, recorte, 'application/pdf');
 
     await enTransaccion(async (cliente) => {
@@ -112,7 +187,8 @@ export async function dividirSiHaceFalta(
         `INSERT INTO documento
            (id, inquilino_id, origen, huella, tipo_mime, nombre_archivo, estado,
             plantilla_codigo, documento_padre_id, pagina_desde, pagina_hasta)
-         VALUES ($1, $2, 'SEGMENTO', $3, 'application/pdf', $4, 'RECIBIDO', $5, $6, $7, $8)`,
+         VALUES ($1, $2, 'SEGMENTO', $3, 'application/pdf', $4, 'RECIBIDO', $5, $6, $7, $8)
+         ON CONFLICT (inquilino_id, huella) DO NOTHING`,
         [
           hijoId,
           documento.inquilino_id,

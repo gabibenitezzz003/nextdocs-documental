@@ -257,6 +257,37 @@ export async function revisarDocumento(pedido: PedidoRevision): Promise<Resultad
       await cerrarExcepciones(cliente, documento.id, pedido.motivo ?? 'Rechazado en revision manual.', actor);
       antes = { estado: documento.estado };
       despues = { estado: 'RECHAZADO' };
+
+      const { rows: hijosPendientes } = await cliente.query<{ id: string; estado: string }>(
+        `UPDATE documento
+            SET estado = 'RECHAZADO', actualizado_en = now()
+          WHERE documento_padre_id = $1 AND estado <> ALL($2::text[])
+          RETURNING id, estado`,
+        [documento.id, ['APROBADO', 'RECHAZADO', 'CERRADO', 'DIVIDIDO']],
+      );
+
+      for (const hijo of hijosPendientes) {
+        await cerrarExcepciones(cliente, hijo.id, pedido.motivo ?? 'Rechazado con el documento padre.', actor);
+        await auditar(cliente, {
+          inquilinoId: documento.inquilino_id,
+          tipoAgregado: 'documento',
+          agregadoId: hijo.id,
+          accion: 'REVISION_RECHAZAR',
+          actor,
+          origen: 'API',
+          correlacionId,
+          antes: { estado: hijo.estado },
+          despues: { estado: 'RECHAZADO', documentoPadreId: documento.id },
+        });
+        await encolarEvento(cliente, {
+          inquilinoId: documento.inquilino_id,
+          tipoAgregado: 'documento',
+          agregadoId: hijo.id,
+          tipoEvento: 'documento.rechazado',
+          correlacionId,
+          datos: { motivo: pedido.motivo ?? null, rechazadoPor: actor.id, documentoPadreId: documento.id },
+        });
+      }
     }
 
     await cliente.query(
