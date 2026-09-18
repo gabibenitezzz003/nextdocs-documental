@@ -210,6 +210,17 @@ export async function procesarDocumento(
   const documento = rows[0];
   if (!documento) throw new Error(`No existe el documento ${documentoId}.`);
 
+  if (documento.estado === 'ELIMINADO') {
+    return {
+      documentoId: documento.id,
+      estado: 'ELIMINADO',
+      confianza: null,
+      excepcionId: null,
+      instantaneaId: null,
+      motivo: 'El documento fue eliminado antes de procesarse.',
+    };
+  }
+
   if (documento.estado === 'OBSERVADO') {
     await conexion().query(
       `UPDATE excepcion SET estado = 'DESCARTADA', resolucion = 'Reintento del documento.',

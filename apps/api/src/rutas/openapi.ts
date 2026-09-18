@@ -218,6 +218,24 @@ function documento(): Record<string, unknown> {
           responses: { '202': { description: 'encolado' }, '409': respuestaProblema('estado invalido') },
         },
       },
+      '/api/v1/documentos/{id}/eliminar': {
+        post: {
+          tags: ['documentos'],
+          summary: 'Elimina logicamente el documento: sale de las bandejas y la auditoria queda registrada',
+          parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string', format: 'uuid' } }],
+          requestBody: {
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'object',
+                  properties: { motivo: { type: 'string', maxLength: 512 } },
+                },
+              },
+            },
+          },
+          responses: { '200': { description: 'eliminado' }, '409': respuestaProblema('ya eliminado') },
+        },
+      },
       '/api/v1/excepciones': {
         get: {
           tags: ['operacion'],

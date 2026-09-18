@@ -11,6 +11,7 @@ import {
   DocumentoInexistente,
   RevisionInvalida,
   confirmarEmparejamiento,
+  eliminarDocumento,
   recibirDocumento,
   revisarDocumento,
 } from '@nextdocs/nucleo';
@@ -191,5 +192,23 @@ export async function rutasDeDocumentos(servidor: FastifyInstance): Promise<void
 
     respuesta.status(202);
     return { documentoId: id, encolado: true, correlacionId: pedido.correlacionId };
+  });
+
+  servidor.post('/api/v1/documentos/:id/eliminar', async (pedido) => {
+    exigirPermiso(pedido.contexto, 'revisar');
+    const { id } = esquemaId.parse(pedido.params);
+    const cuerpo = z.object({ motivo: z.string().max(512).nullish() }).parse(pedido.body ?? {});
+
+    try {
+      return await eliminarDocumento({
+        inquilinoId: pedido.contexto.inquilinoId,
+        documentoId: id,
+        motivo: cuerpo.motivo ?? null,
+        actor: pedido.contexto.actor,
+        correlacionId: pedido.correlacionId,
+      });
+    } catch (error) {
+      return traducir(error);
+    }
   });
 }

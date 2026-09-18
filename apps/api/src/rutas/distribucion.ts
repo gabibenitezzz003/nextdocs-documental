@@ -124,6 +124,10 @@ export async function rutasDeDistribucion(servidor: FastifyInstance): Promise<vo
       throw new ErrorApi('TRANSICION_INVALIDA', 'El documento todavia se esta procesando.');
     }
 
+    if (documento.estado === 'ELIMINADO') {
+      throw new ErrorApi('TRANSICION_INVALIDA', 'El documento esta eliminado.');
+    }
+
     await conexion().query(
       `INSERT INTO envio_documental
          (inquilino_id, documento_id, destinatario, asunto, motivo)

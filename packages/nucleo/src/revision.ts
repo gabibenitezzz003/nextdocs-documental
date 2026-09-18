@@ -365,6 +365,90 @@ export async function revisarDocumento(pedido: PedidoRevision): Promise<Resultad
   return { documentoId: documento.id, estado: estadoFinal, revisionId, instantaneaId };
 }
 
+export interface PedidoEliminacion {
+  inquilinoId: string;
+  documentoId: string;
+  motivo?: string | null;
+  actor?: Actor;
+  correlacionId?: string | null;
+}
+
+export async function eliminarDocumento(pedido: PedidoEliminacion): Promise<ResultadoRevision> {
+  const actor = pedido.actor ?? SISTEMA;
+  const correlacionId = pedido.correlacionId ?? randomUUID();
+  const documento = await documentoDelInquilino(pedido.inquilinoId, pedido.documentoId);
+
+  if (documento.estado === 'ELIMINADO') {
+    throw new RevisionInvalida('TRANSICION_INVALIDA', 'El documento ya esta eliminado.');
+  }
+
+  const revisionId = randomUUID();
+
+  await enTransaccion(async (cliente) => {
+    exigirTransicion(documento.estado, 'ELIMINADO');
+    await cliente.query(
+      'UPDATE documento SET estado = $1, actualizado_en = now() WHERE id = $2',
+      ['ELIMINADO', documento.id],
+    );
+    await cerrarExcepciones(cliente, documento.id, pedido.motivo ?? 'Eliminado por el usuario.', actor);
+
+    const { rows: hijosPendientes } = await cliente.query<{ id: string; estado: string }>(
+      `UPDATE documento
+          SET estado = 'ELIMINADO', actualizado_en = now()
+        WHERE documento_padre_id = $1 AND estado <> ALL($2::text[])
+        RETURNING id, estado`,
+      [documento.id, ['ELIMINADO']],
+    );
+
+    for (const hijo of hijosPendientes) {
+      await cerrarExcepciones(cliente, hijo.id, pedido.motivo ?? 'Eliminado con el documento padre.', actor);
+      await auditar(cliente, {
+        inquilinoId: documento.inquilino_id,
+        tipoAgregado: 'documento',
+        agregadoId: hijo.id,
+        accion: 'DOCUMENTO_ELIMINADO',
+        actor,
+        origen: 'API',
+        correlacionId,
+        antes: { estado: hijo.estado },
+        despues: { estado: 'ELIMINADO', documentoPadreId: documento.id },
+      });
+      await encolarEvento(cliente, {
+        inquilinoId: documento.inquilino_id,
+        tipoAgregado: 'documento',
+        agregadoId: hijo.id,
+        tipoEvento: 'documento.eliminado',
+        correlacionId,
+        datos: { motivo: pedido.motivo ?? null, eliminadoPor: actor.id, documentoPadreId: documento.id },
+      });
+    }
+
+    await auditar(cliente, {
+      inquilinoId: documento.inquilino_id,
+      tipoAgregado: 'documento',
+      agregadoId: documento.id,
+      accion: 'DOCUMENTO_ELIMINADO',
+      actor,
+      origen: 'API',
+      correlacionId,
+      antes: { estado: documento.estado },
+      despues: { estado: 'ELIMINADO' },
+      metadatos: { motivo: pedido.motivo ?? null, revisionId },
+    });
+
+    await encolarEvento(cliente, {
+      inquilinoId: documento.inquilino_id,
+      tipoAgregado: 'documento',
+      agregadoId: documento.id,
+      tipoEvento: 'documento.eliminado',
+      correlacionId,
+      datos: { motivo: pedido.motivo ?? null, eliminadoPor: actor.id },
+    });
+  });
+
+  return { documentoId: documento.id, estado: 'ELIMINADO', revisionId, instantaneaId: null };
+}
+
 export interface PedidoConfirmarEmparejamiento {
   inquilinoId: string;
   documentoId: string;

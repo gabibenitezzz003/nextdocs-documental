@@ -1008,3 +1008,118 @@ describe('segmentacion de lotes multipagina', () => {
     expect(Number(pendientes[0]?.total)).toBe(0);
   });
 });
+
+describe('eliminacion de documentos', () => {
+  beforeAll(async () => {
+    await usarBaseDePruebas();
+    exigirBaseDePruebas();
+    await migrar();
+    await conexion().query('TRUNCATE inquilino CASCADE');
+    await conexion().query(
+      'INSERT INTO inquilino (id, nombre) VALUES ($1, $2) ON CONFLICT (id) DO NOTHING',
+      [INQUILINO, 'Demo Logistics'],
+    );
+  });
+
+  afterAll(async () => {
+    await conexion().query('TRUNCATE inquilino CASCADE');
+    await cerrar();
+  });
+
+  beforeEach(async () => {
+    limpiarGuiones();
+    encolados.length = 0;
+    catalogo = [];
+    await conexion().query('DELETE FROM documento WHERE inquilino_id = $1', [INQUILINO]);
+    await conexion().query('DELETE FROM evento_salida WHERE inquilino_id = $1', [INQUILINO]);
+  });
+
+  it('un aprobado eliminado queda ELIMINADO con auditoria y evento', async () => {
+    const { eliminarDocumento } = await import('./revision.js');
+    const carga = await cargar('factura-error.pdf', pdf('a eliminar'));
+    await conexion().query("UPDATE documento SET estado = 'APROBADO' WHERE id = $1", [
+      carga.documentoId,
+    ]);
+
+    const resultado = await eliminarDocumento({
+      inquilinoId: INQUILINO,
+      documentoId: carga.documentoId as string,
+      motivo: 'cargado por error',
+    });
+
+    expect(resultado.estado).toBe('ELIMINADO');
+
+    const { rows } = await conexion().query<{ estado: string }>(
+      'SELECT estado FROM documento WHERE id = $1',
+      [carga.documentoId],
+    );
+    expect(rows[0]?.estado).toBe('ELIMINADO');
+
+    const { rows: auditoria } = await conexion().query<{
+      accion: string;
+      antes: { estado: string };
+      metadatos: { motivo: string };
+    }>(
+      `SELECT accion, antes, metadatos FROM evento_auditoria
+        WHERE agregado_id = $1 AND accion = 'DOCUMENTO_ELIMINADO'`,
+      [carga.documentoId],
+    );
+    expect(auditoria).toHaveLength(1);
+    expect(auditoria[0]?.antes.estado).toBe('APROBADO');
+    expect(auditoria[0]?.metadatos.motivo).toBe('cargado por error');
+
+    const { rows: eventos } = await conexion().query<{ tipo_evento: string }>(
+      `SELECT tipo_evento FROM evento_salida
+        WHERE agregado_id = $1 AND tipo_evento = 'documento.eliminado'`,
+      [carga.documentoId],
+    );
+    expect(eventos).toHaveLength(1);
+  });
+
+  it('eliminar el padre dividido elimina tambien los hijos pendientes', async () => {
+    const { eliminarDocumento } = await import('./revision.js');
+    const carga = await cargar('lote-padre.pdf', pdf('padre'));
+    const hijoRechazado = randomUUID();
+    const hijoAprobado = randomUUID();
+    await conexion().query(
+      `INSERT INTO documento (id, inquilino_id, origen, huella, tipo_mime, nombre_archivo, estado, documento_padre_id)
+       VALUES ($1, $2, 'API', $3, 'application/pdf', 'hijo-1.pdf', 'RECHAZADO', $4),
+              ($5, $2, 'API', $6, 'application/pdf', 'hijo-2.pdf', 'APROBADO', $4)`,
+      [hijoRechazado, INQUILINO, randomUUID(), carga.documentoId, hijoAprobado, randomUUID()],
+    );
+    await conexion().query("UPDATE documento SET estado = 'DIVIDIDO' WHERE id = $1", [
+      carga.documentoId,
+    ]);
+
+    const resultado = await eliminarDocumento({
+      inquilinoId: INQUILINO,
+      documentoId: carga.documentoId as string,
+    });
+
+    expect(resultado.estado).toBe('ELIMINADO');
+
+    const { rows } = await conexion().query<{ estado: string }>(
+      'SELECT estado FROM documento WHERE documento_padre_id = $1 ORDER BY nombre_archivo',
+      [carga.documentoId],
+    );
+    expect(rows.map((r) => r.estado)).toEqual(['ELIMINADO', 'ELIMINADO']);
+  });
+
+  it('no se puede eliminar dos veces ni el documento de otro inquilino', async () => {
+    const { eliminarDocumento } = await import('./revision.js');
+    const carga = await cargar('unico.pdf', pdf('unico'));
+
+    await eliminarDocumento({
+      inquilinoId: INQUILINO,
+      documentoId: carga.documentoId as string,
+    });
+
+    await expect(
+      eliminarDocumento({ inquilinoId: INQUILINO, documentoId: carga.documentoId as string }),
+    ).rejects.toMatchObject({ codigo: 'TRANSICION_INVALIDA' });
+
+    await expect(
+      eliminarDocumento({ inquilinoId: OTRO_INQUILINO, documentoId: carga.documentoId as string }),
+    ).rejects.toMatchObject({ codigo: 'DOCUMENTO_NO_ENCONTRADO' });
+  });
+});

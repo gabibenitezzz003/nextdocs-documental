@@ -19,7 +19,8 @@ export type EstadoDocumento =
   | 'APROBADO'
   | 'RECHAZADO'
   | 'CERRADO'
-  | 'DIVIDIDO';
+  | 'DIVIDIDO'
+  | 'ELIMINADO';
 
 export type EstadoFisico =
   | 'NO_REQUERIDO'

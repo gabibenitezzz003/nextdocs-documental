@@ -9,6 +9,7 @@ export const TIPOS_EVENTO = [
   'documento.aprobado',
   'documento.rechazado',
   'documento.cerrado',
+  'documento.eliminado',
   'fisico.estado_cambiado',
   'revision.completada',
   'integracion.entrega_fallida',

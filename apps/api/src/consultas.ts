@@ -37,6 +37,8 @@ export async function bandeja(inquilinoId: string, filtro: FiltroBandeja): Promi
   if (filtro.estado) {
     parametros.push(filtro.estado.toUpperCase());
     condiciones.push(`d.estado = $${parametros.length}`);
+  } else {
+    condiciones.push(`d.estado <> 'ELIMINADO'`);
   }
 
   if (filtro.plantilla) {
@@ -76,7 +78,8 @@ export async function bandeja(inquilinoId: string, filtro: FiltroBandeja): Promi
 
 export async function resumenPorEstado(inquilinoId: string): Promise<Record<string, number>> {
   const { rows } = await conexion().query<{ estado: string; total: string }>(
-    'SELECT estado, count(*) AS total FROM documento WHERE inquilino_id = $1 GROUP BY estado',
+    `SELECT estado, count(*) AS total FROM documento
+      WHERE inquilino_id = $1 AND estado <> 'ELIMINADO' GROUP BY estado`,
     [inquilinoId],
   );
   return Object.fromEntries(rows.map((r) => [r.estado, Number(r.total)]));
@@ -303,7 +306,7 @@ export async function vencimientos(
   const condiciones = [
     'd.inquilino_id = $1',
     'd.vence_en IS NOT NULL',
-    "d.estado NOT IN ('RECHAZADO', 'DIVIDIDO')",
+    "d.estado NOT IN ('RECHAZADO', 'DIVIDIDO', 'ELIMINADO')",
   ];
   const parametros: unknown[] = [inquilinoId];
 
@@ -357,7 +360,7 @@ export async function resumenDeVencimientos(
        FROM documento d
       WHERE d.inquilino_id = $1
         AND d.vence_en IS NOT NULL
-        AND d.estado NOT IN ('RECHAZADO', 'DIVIDIDO')
+        AND d.estado NOT IN ('RECHAZADO', 'DIVIDIDO', 'ELIMINADO')
       GROUP BY 1`,
     [inquilinoId, dias],
   );
