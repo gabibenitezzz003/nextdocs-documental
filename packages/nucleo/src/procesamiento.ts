@@ -529,7 +529,12 @@ export async function procesarDocumento(
         tipoEvento: 'documento.aprobado',
         correlacionId,
         causacionId: corridaId,
-        datos: { aprobadoPor: 'SISTEMA', instantaneaId, confianza: procesado.confianza },
+        datos: {
+          plantilla: documento.plantilla_codigo,
+          instantaneaId,
+          aprobadoPor: 'SISTEMA',
+          confianza: procesado.confianza,
+        },
       });
     } else {
       await cambiarEstado(cliente, documento, 'OBSERVADO', correlacionId);
@@ -570,6 +575,7 @@ export async function procesarDocumento(
         correlacionId,
         causacionId: corridaId,
         datos: {
+          plantilla: documento.plantilla_codigo,
           codigoMotivo: primero?.codigo ?? 'REVISION_REQUERIDA',
           severidad,
           excepcionId,
